@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Asadero La Esmeralda - Pro Dashboard</title>
+    <title>Asadero Tamarindo - Pro Dashboard</title>
     <style>
         :root{--bg:#0f172a;--card:#1e293b;--accent:#f59e0b;--accent2:#ef4444;--text:#ffffff;--soft:#334155;}
         body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
@@ -23,7 +23,7 @@
         header{background:linear-gradient(135deg,var(--accent),var(--accent2));padding:20px;text-align:center;font-weight:900;color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 10px rgba(0,0,0,0.3);letter-spacing:1px;}
         .config-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:24px;cursor:pointer;background:rgba(0,0,0,0.2);padding:8px;border-radius:50%;line-height:1;}
 
-        .main-wrapper{max-width:1200px;margin:auto;padding:20px;display:grid;grid-template-columns:1fr;gap:20px; padding-bottom: 120px; /* Reducido para nueva barra */}
+        .main-wrapper{max-width:1200px;margin:auto;padding:20px;display:grid;grid-template-columns:1fr;gap:20px; padding-bottom: 140px;}
 
         @media (min-width: 768px) {
             .main-wrapper { grid-template-columns: 350px 1fr; align-items: start; }
@@ -61,7 +61,7 @@
         .item-precio { font-weight:bold; color:var(--accent); font-size:16px; }
         .del-btn { background:var(--accent2); color:white; border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-weight:bold; }
 
-        /* DISEÑO COMPACTO UNIFICADO */
+        /* FOOTER */
         .compact-footer {
             position: fixed; bottom: 0; left: 0; right: 0;
             background: rgba(15, 23, 42, 0.95);
@@ -72,18 +72,13 @@
             display: flex; flex-direction: column; gap: 8px;
             box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
         }
-
         .footer-top { display: flex; justify-content: space-between; align-items: center; }
         .footer-info-group { line-height: 1.1; }
         .footer-label { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; display: block; }
         .footer-total { font-size: 1.6rem; font-weight: 900; color: #fff; margin: 0; }
         .footer-badge { background: var(--accent2); padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
-
         .footer-actions { display: flex; gap: 8px; }
-        .footer-actions button { 
-            flex: 1; height: 42px; border-radius: 12px; border: none; 
-            font-weight: bold; color: white; cursor: pointer; font-size: 14px; 
-        }
+        .footer-actions button { flex: 1; height: 42px; border-radius: 12px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 14px; }
 
         label{display:block; margin-bottom:8px; font-size:13px; color:var(--accent); text-transform:uppercase; font-weight:800; letter-spacing:1px;}
     </style>
@@ -93,7 +88,7 @@
 <div id="login-overlay">
     <div class="login-card">
         <h2 style="color:var(--accent); margin-top:0;">🔥 ACCESO</h2>
-        <p style="font-size:14px; opacity:0.7;">Asadero La Esmeralda</p>
+        <p style="font-size:14px; opacity:0.7;">Asadero Tamarindo</p>
         <input type="text" id="user" class="input-field" placeholder="Usuario">
         <input type="password" id="pass" class="input-field" placeholder="Contraseña">
         <button class="btn" style="width:100%; background:var(--accent); color:black;" onclick="validarAcceso()">ENTRAR</button>
@@ -125,17 +120,19 @@
                 <button class="btn active" id="btnLocal" onclick="setServicio('local')">LOCAL</button>
                 <button class="btn" id="btnDomi" onclick="setServicio('domicilio')">DOMICILIO</button>
             </div>
+            
             <div id="formDomicilio" class="domi-form hidden" style="margin-top:15px;">
                 <input type="text" id="domiNombre" class="input-field" placeholder="Cliente">
                 <input type="tel" id="domiTel" class="input-field" placeholder="Teléfono">
                 <input type="text" id="domiDir" class="input-field" placeholder="Dirección">
-                <textarea id="domiObs" class="input-field" placeholder="Observaciones..." style="height: 60px;"></textarea>
+                <textarea id="domiObs" class="input-field" placeholder="Observaciones Domicilio..." style="height: 60px;"></textarea>
             </div>
-        </div>
 
-        <div id="sectionMesas" class="card">
-            <label>📍 Selección de Mesa</label>
-            <div class="grid" id="mesas"></div>
+            <div id="sectionMesas" style="margin-top:15px;">
+                <label>📍 Mesa</label>
+                <div class="grid" id="mesas" style="margin-bottom:15px;"></div>
+                <textarea id="localObs" class="input-field" placeholder="Notas de la mesa (Ej: Sin cebolla, término medio...)" style="height: 60px;"></textarea>
+            </div>
         </div>
     </div>
 
@@ -310,7 +307,7 @@ function nuevoPedido(){
     if(!confirm("¿Borrar pedido actual?")) return;
     numComensales = 1; pedidosPorPersona = {};
     document.getElementById("cantComensales").textContent = 1;
-    document.querySelectorAll("#formDomicilio input, #formDomicilio textarea").forEach(i => i.value = "");
+    document.querySelectorAll("input, textarea").forEach(i => { if(i.id !== "configWa") i.value = ""; });
     setServicio('local'); renderComensales();
 }
 
@@ -318,10 +315,15 @@ function wa(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", total = calcularTotal(), targetNum = document.getElementById("configWa").value;
     if(total === 0) return alert("Pedido vacío");
     let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n👤 *Atendido por:* ${usuarioActivo.toUpperCase()}\n`;
+    
     if(tipoServicio === 'domicilio'){
         const obs = document.getElementById('domiObs').value;
         msg += `🛵 *DOMICILIO*\n👤 *Cli:* ${document.getElementById('domiNombre').value || 'N/A'}\n📞 *Tel:* ${document.getElementById('domiTel').value || 'N/A'}\n📍 *Dir:* ${document.getElementById('domiDir').value || 'N/A'}\n${obs?'📝 *Obs:* '+obs+'\n':''}`;
-    } else { msg += `📍 *Mesa:* ${mesa}\n`; }
+    } else { 
+        const obsLocal = document.getElementById('localObs').value;
+        msg += `📍 *Mesa:* ${mesa}\n${obsLocal ? '📝 *Notas:* ' + obsLocal + '\n' : ''}`; 
+    }
+    
     msg += `--------------------------\n`;
     Object.keys(pedidosPorPersona).forEach(idx => {
         if(pedidosPorPersona[idx].length > 0){
@@ -339,7 +341,14 @@ function wa(){
 function imprimir(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", totalVal = calcularTotal();
     if(totalVal === 0) return;
-    let tHeader = tipoServicio === 'domicilio' ? `DOMICILIO\nCli: ${document.getElementById('domiNombre').value}\nDir: ${document.getElementById('domiDir').value}` : `MESA: ${mesa}`;
+    
+    let tHeader = "";
+    if(tipoServicio === 'domicilio'){
+        tHeader = `DOMICILIO\nCli: ${document.getElementById('domiNombre').value}\nDir: ${document.getElementById('domiDir').value}\nOBS: ${document.getElementById('domiObs').value}`;
+    } else {
+        tHeader = `MESA: ${mesa}\nNOTAS: ${document.getElementById('localObs').value}`;
+    }
+
     let tkt = "";
     Object.keys(pedidosPorPersona).forEach(idx => {
         if(pedidosPorPersona[idx].length > 0){
