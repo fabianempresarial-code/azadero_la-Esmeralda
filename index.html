@@ -350,7 +350,6 @@ function calcularTotal(){
         count += pArr.length;
     });
 
-    // Sumar precio domicilio si aplica
     if(tipoServicio === 'domicilio') {
         const pDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
         t += pDomi;
@@ -365,10 +364,16 @@ function calcularTotal(){
 
 function nuevoPedido(){
     if(!confirm("¿Borrar pedido actual?")) return;
-    numComensales = 1; pedidosPorPersona = {};
+    numComensales = 1; 
+    pedidosPorPersona = {};
     document.getElementById("cantComensales").textContent = 1;
     document.querySelectorAll("input, textarea").forEach(i => { if(i.id !== "configWa" && i.id !== "configPrecioDomi") i.value = ""; });
-    setServicio('local'); renderComensales();
+    
+    // Borrar selección de mesa visual
+    document.querySelectorAll("#mesas .btn").forEach(x => x.classList.remove("active"));
+    
+    setServicio('local'); 
+    renderComensales();
 }
 
 function wa(){
@@ -381,7 +386,6 @@ function wa(){
         const pDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
         msg += `🛵 *DOMICILIO*\n👤 *Cli:* ${document.getElementById('domiNombre').value || 'N/A'}\n📞 *Tel:* ${document.getElementById('domiTel').value || 'N/A'}\n📍 *Dir:* ${document.getElementById('domiDir').value || 'N/A'}\n${obs?'📝 *Obs:* '+obs+'\n':''}`;
         msg += `--------------------------\n`;
-        // Listar productos
         Object.keys(pedidosPorPersona).forEach(idx => {
             if(pedidosPorPersona[idx].length > 0){
                 const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
@@ -405,7 +409,6 @@ function wa(){
             }
         });
     }
-    
     msg += `--------------------------\n💰 *TOTAL: $${total.toLocaleString()}*`;
     window.open(`https://wa.me/${targetNum}?text=${encodeURIComponent(msg)}`);
 }
