@@ -8,7 +8,6 @@
         :root{--bg:#0f172a;--card:#1e293b;--accent:#f59e0b;--accent2:#ef4444;--text:#ffffff;--soft:#334155;}
         body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
 
-        /* LOGIN OVERLAY */
         #login-overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: var(--bg); z-index: 9999;
@@ -24,11 +23,7 @@
         .config-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:24px;cursor:pointer;background:rgba(0,0,0,0.2);padding:8px;border-radius:50%;line-height:1;}
 
         .main-wrapper{max-width:1200px;margin:auto;padding:20px;display:grid;grid-template-columns:1fr;gap:20px; padding-bottom: 120px;}
-
-        @media (min-width: 768px) {
-            .main-wrapper { grid-template-columns: 350px 1fr; align-items: start; }
-            .sidebar { position: sticky; top: 90px; }
-        }
+        @media (min-width: 768px) { .main-wrapper { grid-template-columns: 350px 1fr; align-items: start; } .sidebar { position: sticky; top: 90px; } }
 
         .card{background:var(--card);padding:20px;border-radius:24px;margin-bottom:15px;box-shadow:0 10px 25px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.05);}
         .grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(60px, 1fr));gap:10px;}
@@ -43,54 +38,23 @@
         .btn-cat.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
         .chips-container{display:grid;grid-template-columns:repeat(auto-fill, minmax(180px, 1fr));gap:12px;margin-top:15px;}
-        .chip{
-            display:flex; align-items:center; gap:12px; padding:12px; background:#020617;
-            border:1px solid var(--soft); border-radius:18px; cursor:pointer; transition:0.2s;
-        }
-        .chip:active{transform:scale(0.95);}
+        .chip{ display:flex; align-items:center; gap:12px; padding:12px; background:#020617; border:1px solid var(--soft); border-radius:18px; cursor:pointer; transition:0.2s; }
         .chip img { width:65px; height:65px; border-radius:12px; object-fit:cover; }
         .chip-info b { display:block; font-size:15px; color:#ffffff; }
         .chip-info span { color:var(--accent); font-weight:bold; }
 
-        .item-pedido {
-            display:flex; justify-content:space-between; align-items:center;
-            background:rgba(0,0,0,0.4); padding:12px; border-radius:14px; margin-bottom:10px; gap:10px;
-        }
-        .item-info span { font-weight:bold; color:white; display:block; }
-        .item-info small { color:var(--accent); }
+        .item-pedido { display:flex; justify-content:space-between; align-items:center; background:rgba(0,0,0,0.4); padding:12px; border-radius:14px; margin-bottom:10px; gap:10px; }
         .item-precio { font-weight:bold; color:var(--accent); font-size:16px; }
         .del-btn { background:var(--accent2); color:white; border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-weight:bold; }
 
-        .compact-footer {
-            position: fixed; bottom: 0; left: 0; right: 0;
-            background: rgba(15, 23, 42, 0.95);
-            backdrop-filter: blur(10px);
-            border-top: 2px solid var(--accent);
-            z-index: 1000;
-            padding: 10px 15px;
-            display: flex; flex-direction: column; gap: 8px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
-        }
-
+        .compact-footer { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15, 23, 42, 0.95); backdrop-filter: blur(10px); border-top: 2px solid var(--accent); z-index: 1000; padding: 10px 15px; display: flex; flex-direction: column; gap: 8px; }
         .footer-top { display: flex; justify-content: space-between; align-items: center; }
-        .footer-info-group { line-height: 1.1; }
-        .footer-label { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; display: block; }
         .footer-total { font-size: 1.6rem; font-weight: 900; color: #fff; margin: 0; }
-        .footer-badge { background: var(--accent2); padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
-
         .footer-actions { display: flex; gap: 8px; }
-        .footer-actions button { 
-            flex: 1; height: 42px; border-radius: 12px; border: none; 
-            font-weight: bold; color: white; cursor: pointer; font-size: 14px; 
-        }
+        .footer-actions button { flex: 1; height: 42px; border-radius: 12px; border: none; font-weight: bold; color: white; cursor: pointer; }
 
         label{display:block; margin-bottom:8px; font-size:13px; color:var(--accent); text-transform:uppercase; font-weight:800; letter-spacing:1px;}
-    
-        .remember-me {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            margin-bottom: 15px; font-size: 14px; color: white; cursor: pointer;
-        }
-        .remember-me input { width: 18px; height: 18px; cursor: pointer; }
+        .remember-me { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 15px; font-size: 14px; color: white; }
     </style>
 </head>
 <body>
@@ -98,29 +62,25 @@
 <div id="login-overlay">
     <div class="login-card">
         <h2 style="color:var(--accent); margin-top:0;">🔥 ACCESO</h2>
-        <p style="font-size:14px; opacity:0.7;">Asadero Tamarindo</p>
         <input type="text" id="user" class="input-field" placeholder="Usuario">
         <input type="password" id="pass" class="input-field" placeholder="Contraseña">
-        
-        <label class="remember-me">
-            <input type="checkbox" id="remember"> Recordar mis datos
-        </label>
-
+        <label class="remember-me"><input type="checkbox" id="remember"> Recordar mis datos</label>
         <button class="btn" style="width:100%; background:var(--accent); color:black;" onclick="validarAcceso()">ENTRAR</button>
         <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Datos incorrectos</p>
     </div>
 </div>
 
-<header>
-    🔥 ASADERO TAMARINDO
-    <span class="config-icon" onclick="toggleConfig()">⚙️</span>
-</header>
+<header>🔥 ASADERO TAMARINDO <span class="config-icon" onclick="toggleConfig()">⚙️</span></header>
 
 <div class="main-wrapper">
     <div class="sidebar">
         <div id="panelConfig" class="card hidden">
             <label>⚙️ Panel de Control</label>
-            <input type="tel" id="configWa" class="input-field" placeholder="WhatsApp Destino" onchange="saveConfig()">
+            <label style="font-size:10px;">WhatsApp Destino</label>
+            <input type="tel" id="configWa" class="input-field" placeholder="Ej: 57300..." onchange="saveConfig()">
+            <label style="font-size:10px;">Precio Domicilio ($)</label>
+            <input type="number" id="configPrecioDomi" class="input-field" placeholder="Ej: 3000" onchange="saveConfig()">
+            <label style="font-size:10px;">Número de Mesas</label>
             <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; align-items:center;">
                 <button class="btn" onclick="ajustarMesas(-1)">➖</button>
                 <span id="displayNumMesas" style="font-size:1.5rem; font-weight:bold; text-align:center;">8</span>
@@ -135,26 +95,23 @@
                 <button class="btn active" id="btnLocal" onclick="setServicio('local')">LOCAL</button>
                 <button class="btn" id="btnDomi" onclick="setServicio('domicilio')">DOMICILIO</button>
             </div>
-            
-            <div id="formDomicilio" class="domi-form hidden" style="margin-top:15px;">
+            <div id="formDomicilio" class="hidden" style="margin-top:15px;">
                 <input type="text" id="domiNombre" class="input-field" placeholder="Cliente">
-                <input type="tel" id="domiTel" class="input-field" placeholder="Teléfono">
                 <input type="text" id="domiDir" class="input-field" placeholder="Dirección">
-                <textarea id="domiObs" class="input-field" placeholder="Observaciones Domicilio..." style="height: 60px;"></textarea>
+                <textarea id="domiObs" class="input-field" placeholder="Obs..." style="height: 60px;"></textarea>
             </div>
-
             <div id="sectionMesas" style="margin-top:15px;">
                 <label>📍 Mesa</label>
-                <div class="grid" id="mesas" style="margin-bottom:10px;"></div>
-                <textarea id="localObs" class="input-field" placeholder="Notas de la mesa..." style="height: 60px;"></textarea>
+                <div class="grid" id="mesas"></div>
+                <textarea id="localObs" class="input-field" placeholder="Notas mesa..." style="height: 60px; margin-top:10px;"></textarea>
             </div>
         </div>
     </div>
 
     <div class="content">
         <div class="card">
-            <label>👤 Cantidad de Pedidos</label>
-            <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; align-items:center; max-width: 300px;">
+            <label>👤 Comensales</label>
+            <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; align-items:center; max-width: 250px;">
                 <button class="btn" onclick="cambiarComensales(-1)">➖</button>
                 <span id="cantComensales" style="font-size:1.6rem; font-weight:bold; text-align: center;">1</span>
                 <button class="btn" onclick="cambiarComensales(1)">➕</button>
@@ -166,11 +123,11 @@
 
 <div class="compact-footer">
     <div class="footer-top">
-        <div class="footer-info-group">
-            <span class="footer-label" id="label-mesa-domi">Mesa: N/A</span>
-            <span class="footer-total" id="total-val-fixed">$0</span>
+        <div style="line-height:1.1;">
+            <span id="label-mesa-domi" style="font-size:11px; color:var(--accent); font-weight:800; text-transform:uppercase;">Mesa: N/A</span>
+            <div class="footer-total" id="total-val-fixed">$0</div>
         </div>
-        <span class="footer-badge" id="badge-items">0 Platos</span>
+        <span class="footer-total" id="badge-items" style="font-size:1rem; opacity:0.6;">0 Platos</span>
     </div>
     <div class="footer-actions">
         <button style="background:var(--accent2); flex:0.4;" onclick="nuevoPedido()">NUEVO</button>
@@ -184,55 +141,30 @@
 <script>
 const URL_USUARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPjmET3KGocH1nu-BSY_rbDB5FTrIpRNL5h_jFaCQq5h3sOoQnkb3aixwq5WQL-fQ8FLe3tdtAiZN/pub?output=csv"; 
 const URL_MENU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU3FT66_0vVAygWPIDfjIAhGwnKGWeBhDB3cVrzkMZQRP6M0ONz2_xwy-u8Q7muAoP6oa4QFxXc7xb/pub?output=csv";
-const IMG_DEFAULT = "https://via.placeholder.com/150?text=COMIDA";
 
 let db_usuarios = [], menu = [], numComensales = 1, pedidosPorPersona = {}, tipoServicio = 'local', usuarioActivo = "";
 
 function parseCSV(t) {
     const r=[], row=[]; let c='', q=false;
     if(!t) return r;
-    for(let ch of t){
-        if(ch=='"') q=!q;
-        else if(ch==','&&!q){row.push(c);c=''}
-        else if(ch=='\n'&&!q){row.push(c);r.push([...row]);row.length=0;c=''}
-        else c+=ch;
-    }
-    row.push(c); r.push(row);
-    return r;
+    for(let ch of t){ if(ch=='"') q=!q; else if(ch==','&&!q){row.push(c);c=''} else if(ch=='\n'&&!q){row.push(c);r.push([...row]);row.length=0;c=''} else c+=ch; }
+    row.push(c); r.push(row); return r;
 }
 
 window.onload = () => {
-    const savedUser = localStorage.getItem("tamarindo_user");
-    const savedPass = localStorage.getItem("tamarindo_pass");
-    if(savedUser && savedPass) {
-        document.getElementById("user").value = savedUser;
-        document.getElementById("pass").value = savedPass;
-        document.getElementById("remember").checked = true;
-    }
+    const sU = localStorage.getItem("tamarindo_user"), sP = localStorage.getItem("tamarindo_pass");
+    if(sU && sP) { document.getElementById("user").value = sU; document.getElementById("pass").value = sP; document.getElementById("remember").checked = true; }
 };
 
-fetch(URL_USUARIOS).then(r => r.text()).then(t => {
-    db_usuarios = parseCSV(t).slice(1).map(f => ({ user: f[0]?.trim() || "", pass: f[1]?.trim() || "" }));
-});
+fetch(URL_USUARIOS).then(r => r.text()).then(t => { db_usuarios = parseCSV(t).slice(1).map(f => ({ user: f[0]?.trim(), pass: f[1]?.trim() })); });
 
 function validarAcceso() {
-    const u = document.getElementById('user').value.trim();
-    const p = document.getElementById('pass').value.trim();
-    const remember = document.getElementById('remember').checked;
+    const u = document.getElementById('user').value.trim(), p = document.getElementById('pass').value.trim(), rem = document.getElementById('remember').checked;
     if (db_usuarios.find(acc => acc.user === u && acc.pass === p)) {
-        if(remember) {
-            localStorage.setItem("tamarindo_user", u);
-            localStorage.setItem("tamarindo_pass", p);
-        } else {
-            localStorage.removeItem("tamarindo_user");
-            localStorage.removeItem("tamarindo_pass");
-        }
-        usuarioActivo = u; 
-        document.getElementById('login-overlay').style.display = 'none'; 
-        iniciarApp();
-    } else { 
-        document.getElementById('login-error').style.display = 'block'; 
-    }
+        if(rem) { localStorage.setItem("tamarindo_user", u); localStorage.setItem("tamarindo_pass", p); }
+        else { localStorage.removeItem("tamarindo_user"); localStorage.removeItem("tamarindo_pass"); }
+        usuarioActivo = u; document.getElementById('login-overlay').style.display = 'none'; iniciarApp();
+    } else { document.getElementById('login-error').style.display = 'block'; }
 }
 
 function iniciarApp() {
@@ -245,11 +177,16 @@ function iniciarApp() {
 function init(){
     document.getElementById("displayNumMesas").textContent = localStorage.getItem("tamarindo_mesas") || 8;
     document.getElementById("configWa").value = localStorage.getItem("tamarindo_wa") || "";
+    document.getElementById("configPrecioDomi").value = localStorage.getItem("tamarindo_val_domi") || 0;
     crearMesas(); renderComensales();
 }
 
 function toggleConfig() { document.getElementById('panelConfig').classList.toggle('hidden'); }
-function saveConfig() { localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); }
+function saveConfig() { 
+    localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); 
+    localStorage.setItem("tamarindo_val_domi", document.getElementById("configPrecioDomi").value);
+    calcularTotal();
+}
 
 function setServicio(tipo) {
     tipoServicio = tipo;
@@ -271,20 +208,12 @@ function crearMesas(){
     cont.innerHTML = "";
     for(let i=1; i<=n; i++){
         let b=document.createElement("button"); b.className="btn"; b.textContent=i;
-        b.onclick=()=>{
-            document.querySelectorAll("#mesas .btn").forEach(x=>x.classList.remove("active"));
-            b.classList.add("active");
-            calcularTotal();
-        };
+        b.onclick=()=>{ document.querySelectorAll("#mesas .btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); calcularTotal(); };
         cont.appendChild(b);
     }
 }
 
-function cambiarComensales(n){
-    numComensales = Math.max(1, numComensales + n);
-    document.getElementById("cantComensales").textContent = numComensales;
-    renderComensales();
-}
+function cambiarComensales(n){ numComensales = Math.max(1, numComensales + n); document.getElementById("cantComensales").textContent = numComensales; renderComensales(); }
 
 function renderComensales(){
     const cont = document.getElementById("contenedor-pedidos"), cats = [...new Set(menu.map(m=>m.cat))].filter(Boolean);
@@ -299,19 +228,16 @@ function renderComensales(){
 }
 
 function setCat(idx, cat, btn) {
-    const parent = document.getElementById(`cats-${idx}`);
-    parent.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
+    btn.parentElement.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
     btn.classList.add('active'); renderChips(idx, cat);
 }
 
 function renderChips(idx, cat){
-    document.getElementById(`chips-${idx}`).innerHTML = menu.filter(m => m.cat === cat).map(p => {
-        const foto = (p.img && p.img.length > 5) ? p.img : IMG_DEFAULT;
-        return `<div class="chip" onclick="agregarPlato(${idx}, '${p.nombre}')">
-                    <img src="${foto}">
-                    <div class="chip-info"><b>${p.nombre}</b><span>$${p.precio.toLocaleString()}</span></div>
-                </div>`;
-    }).join("");
+    document.getElementById(`chips-${idx}`).innerHTML = menu.filter(m => m.cat === cat).map(p => `
+        <div class="chip" onclick="agregarPlato(${idx}, '${p.nombre}')">
+            <img src="${p.img || 'https://via.placeholder.com/150'}">
+            <div class="chip-info"><b>${p.nombre}</b><span>$${p.precio.toLocaleString()}</span></div>
+        </div>`).join("");
 }
 
 function agregarPlato(idx, n){
@@ -323,122 +249,78 @@ function agregarPlato(idx, n){
 function actualizarResumenPersona(idx){
     const cont = document.getElementById(`resumen-${idx}`), items = pedidosPorPersona[idx] || [];
     const agrupado = items.reduce((acc, curr) => { if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; acc[curr.nombre].cant += 1; return acc; }, {});
-    cont.innerHTML = Object.values(agrupado).map((p) => `<div class="item-pedido"><div class="item-info"><span>${p.nombre}</span><small>Cant: ${p.cant} x $${p.precio.toLocaleString()}</small></div><b class="item-precio">$${(p.precio * p.cant).toLocaleString()}</b><button class="del-btn" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button></div>`).join("");
+    cont.innerHTML = Object.values(agrupado).map((p) => `<div class="item-pedido"><b>${p.cant}x ${p.nombre}</b><b class="item-precio">$${(p.precio * p.cant).toLocaleString()}</b><button class="del-btn" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button></div>`).join("");
 }
 
 function quitarPlato(idx, nombre){
-    const index = pedidosPorPersona[idx].findIndex(p => p.nombre === nombre);
-    if(index !== -1) pedidosPorPersona[idx].splice(index, 1);
+    const i = pedidosPorPersona[idx].findIndex(p => p.nombre === nombre);
+    if(i !== -1) pedidosPorPersona[idx].splice(i, 1);
     actualizarResumenPersona(idx); calcularTotal();
 }
 
 function calcularTotal(){
-    let t = 0, count = 0;
-    Object.values(pedidosPorPersona).forEach(pArr => {
-        t += pArr.reduce((sum, p) => sum + p.precio, 0);
-        count += pArr.length;
-    });
-    document.getElementById("total-val-fixed").textContent = `$${t.toLocaleString()}`;
+    let sub = 0, count = 0;
+    Object.values(pedidosPorPersona).forEach(pArr => { sub += pArr.reduce((s, p) => s + p.precio, 0); count += pArr.length; });
+    
+    let domi = (tipoServicio === 'domicilio') ? parseInt(localStorage.getItem("tamarindo_val_domi") || 0) : 0;
+    let total = sub + domi;
+
+    document.getElementById("total-val-fixed").textContent = `$${total.toLocaleString()}`;
     document.getElementById("badge-items").textContent = `${count} Platos`;
     const mesaActiva = document.querySelector("#mesas .active")?.textContent || "N/A";
     document.getElementById("label-mesa-domi").textContent = tipoServicio === 'domicilio' ? "🛵 DOMICILIO" : `📍 MESA: ${mesaActiva}`;
-    return t;
-}
-
-function nuevoPedido(){
-    if(!confirm("¿Borrar pedido actual?")) return;
-    numComensales = 1; pedidosPorPersona = {};
-    document.getElementById("cantComensales").textContent = 1;
-    document.querySelectorAll("input, textarea").forEach(i => { if(i.id !== "configWa") i.value = ""; });
-    setServicio('local'); renderComensales();
+    return { sub, domi, total };
 }
 
 function wa(){
-    const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", total = calcularTotal(), targetNum = document.getElementById("configWa").value;
-    if(total === 0) return alert("Pedido vacío");
-    let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n👤 *Atendido por:* ${usuarioActivo.toUpperCase()}\n`;
+    const { sub, domi, total } = calcularTotal(), target = document.getElementById("configWa").value;
+    if(total === 0) return;
+    let msg = `🔥 *ASADERO TAMARINDO*\nAtendido por: ${usuarioActivo.toUpperCase()}\n`;
     if(tipoServicio === 'domicilio'){
-        const obs = document.getElementById('domiObs').value;
-        msg += `🛵 *DOMICILIO*\n👤 *Cli:* ${document.getElementById('domiNombre').value || 'N/A'}\n📞 *Tel:* ${document.getElementById('domiTel').value || 'N/A'}\n📍 *Dir:* ${document.getElementById('domiDir').value || 'N/A'}\n${obs?'📝 *Obs:* '+obs+'\n':''}`;
-    } else { 
-        const obsLoc = document.getElementById('localObs').value;
-        msg += `📍 *Mesa:* ${mesa}\n${obsLoc ? '📝 *Notas:* ' + obsLoc + '\n' : ''}`; 
-    }
+        msg += `🛵 *DOMICILIO*\n👤 ${document.getElementById('domiNombre').value}\n📍 ${document.getElementById('domiDir').value}\n`;
+    } else { msg += `📍 *Mesa:* ${document.querySelector("#mesas .active")?.textContent || "N/A"}\n`; }
+    
     msg += `--------------------------\n`;
     Object.keys(pedidosPorPersona).forEach(idx => {
         if(pedidosPorPersona[idx].length > 0){
-            msg += `👤 *Pedido ${idx}:*\n`;
-            const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
-            for (const [nombre, cant] of Object.entries(agrupado)) {
-                msg += ` - ${cant}x ${nombre} ($${(menu.find(m=>m.nombre===nombre).precio*cant).toLocaleString()})\n`;
-            }
+            msg += `*Pedido ${idx}:*\n`;
+            const agr = pedidosPorPersona[idx].reduce((a, c) => { a[c.nombre] = (a[c.nombre] || 0) + 1; return a; }, {});
+            for (const [n, c] of Object.entries(agr)) msg += ` - ${c}x ${n}\n`;
         }
     });
-    msg += `--------------------------\n💰 *TOTAL: $${total.toLocaleString()}*`;
-    window.open(`https://wa.me/${targetNum}?text=${encodeURIComponent(msg)}`);
+    if(domi > 0) msg += `--------------------------\n🛵 Domicilio: $${domi.toLocaleString()}\n`;
+    msg += `💰 *TOTAL: $${total.toLocaleString()}*`;
+    window.open(`https://wa.me/${target}?text=${encodeURIComponent(msg)}`);
 }
 
 function imprimir(){
-    const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", totalVal = calcularTotal();
-    if(totalVal === 0) return alert("No hay productos");
-
+    const { sub, domi, total } = calcularTotal();
+    if(total === 0) return;
     const fecha = new Date().toLocaleString();
-    let headerInfo = "";
-    if(tipoServicio === 'domicilio'){
-        headerInfo = `DOMICILIO\nCliente: ${document.getElementById('domiNombre').value}\nDireccion: ${document.getElementById('domiDir').value}\nObs: ${document.getElementById('domiObs').value}`;
-    } else {
-        headerInfo = `MESA: ${mesa}\nNOTAS: ${document.getElementById('localObs').value}`;
-    }
+    let head = (tipoServicio === 'domicilio') ? `DOMICILIO\nCli: ${document.getElementById('domiNombre').value}\nDir: ${document.getElementById('domiDir').value}` : `MESA: ${document.querySelector("#mesas .active")?.textContent || "N/A"}`;
 
-    let detalleProductos = "";
+    let det = "";
     Object.keys(pedidosPorPersona).forEach(idx => {
         if(pedidosPorPersona[idx].length > 0){
-            detalleProductos += `\n[ PEDIDO ${idx} ]\n`;
-            const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
-            for (const [nombre, cant] of Object.entries(agrupado)) {
-                let p = menu.find(m=>m.nombre===nombre);
-                detalleProductos += `${cant}x ${nombre.padEnd(18,'.')} $${(p.precio*cant).toLocaleString()}\n`;
-            }
+            det += `\n[ PEDIDO ${idx} ]\n`;
+            const agr = pedidosPorPersona[idx].reduce((a, c) => { a[c.nombre] = (a[c.nombre] || 0) + 1; return a; }, {});
+            for (const [n, c] of Object.entries(agr)) det += `${c}x ${n.padEnd(18,'.')} $${(menu.find(m=>m.nombre===n).precio*c).toLocaleString()}\n`;
         }
     });
 
-    const generarTicket = (titulo) => `
-        <div style="width:280px; padding:10px; font-family:'Courier New', monospace; font-size:12px; color:black; border-bottom:1px dashed #ccc; margin-bottom:20px;">
-            <div style="text-align:center;">
-                <h3 style="margin:0;">ASADERO TAMARINDO</h3>
-                <p style="margin:5px 0;">*** ${titulo} ***</p>
-                <p style="margin:2px 0; font-size:10px;">${fecha}</p>
-            </div>
-            <hr style="border:none; border-top:1px dashed black;">
-            <pre style="margin:0; white-space:pre-wrap;">Atiende: ${usuarioActivo.toUpperCase()}\n${headerInfo}</pre>
-            <hr style="border:none; border-top:1px dashed black;">
-            <pre style="margin:0; white-space:pre-wrap;">${detalleProductos}</pre>
-            <hr style="border:none; border-top:1px dashed black;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;">
-                <span>TOTAL:</span> <span>$${totalVal.toLocaleString()}</span>
-            </div>
-            <div style="text-align:center; margin-top:15px; font-size:10px;">¡Gracias por su compra!</div>
-        </div>
-    `;
+    const ticket = (tit) => `
+        <div style="width:280px; padding:10px; font-family:monospace; border-bottom:1px dashed #ccc; margin-bottom:20px;">
+            <div style="text-align:center;"><h3 style="margin:0;">ASADERO TAMARINDO</h3><p>${tit}</p></div>
+            <pre>${fecha}\nAtiende: ${usuarioActivo}\n${head}\n--------------------------\n${det}\n--------------------------${domi>0?'\nDOMICILIO: $'+domi.toLocaleString():''}\nTOTAL: $${total.toLocaleString()}</pre>
+        </div>`;
 
-    // Lógica para copias adicionales
-    let ticketsHtml = generarTicket("COPIA CAJA") + '<div style="height:40px;"></div>' + generarTicket("COPIA COCINA");
-    
-    // Si es domicilio, añadir tercera copia
-    if(tipoServicio === 'domicilio') {
-        ticketsHtml += '<div style="height:40px;"></div>' + generarTicket("COPIA DOMICILIO");
-    }
-
-    const contenidoFinal = `<html><body style="margin:0; display:flex; flex-direction:column; align-items:center;">
-        ${ticketsHtml}
-    </body></html>`;
-
+    let html = ticket("CAJA") + ticket("COCINA") + (tipoServicio === 'domicilio' ? ticket("REPARTO") : "");
     const f = document.getElementById('printFrame');
-    f.contentWindow.document.open();
-    f.contentWindow.document.write(contenidoFinal);
-    f.contentWindow.document.close();
+    f.contentWindow.document.open(); f.contentWindow.document.write(`<html><body style="display:flex; flex-direction:column; align-items:center;">${html}</body></html>`); f.contentWindow.document.close();
     setTimeout(() => { f.contentWindow.print(); }, 500);
 }
+
+function nuevoPedido(){ if(confirm("¿Borrar pedido?")) location.reload(); }
 </script>
 </body>
 </html>
