@@ -98,7 +98,7 @@
 <div id="login-overlay">
     <div class="login-card">
         <h2 style="color:var(--accent); margin-top:0;">🔥 ACCESO</h2>
-        <p style="font-size:14px; opacity:0.7;">ASADERO Y PIQUETEADERO LA ESMERALDA GOURMET</p>
+        <p style="font-size:14px; opacity:0.7;">Asadero Tamarindo</p>
         <input type="text" id="user" class="input-field" placeholder="Usuario">
         <input type="password" id="pass" class="input-field" placeholder="Contraseña">
         
@@ -112,7 +112,7 @@
 </div>
 
 <header>
-    🔥 ASADERO Y PIQUETEADERO LA ESMERALDA GOURMET
+    🔥 ASADERO TAMARINDO
     <span class="config-icon" onclick="toggleConfig()">⚙️</span>
 </header>
 
@@ -201,7 +201,6 @@ function parseCSV(t) {
     return r;
 }
 
-// Cargar credenciales recordadas al inicio
 window.onload = () => {
     const savedUser = localStorage.getItem("tamarindo_user");
     const savedPass = localStorage.getItem("tamarindo_pass");
@@ -220,7 +219,6 @@ function validarAcceso() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
     const remember = document.getElementById('remember').checked;
-
     if (db_usuarios.find(acc => acc.user === u && acc.pass === p)) {
         if(remember) {
             localStorage.setItem("tamarindo_user", u);
@@ -423,10 +421,16 @@ function imprimir(){
         </div>
     `;
 
+    // Lógica para copias adicionales
+    let ticketsHtml = generarTicket("COPIA CAJA") + '<div style="height:40px;"></div>' + generarTicket("COPIA COCINA");
+    
+    // Si es domicilio, añadir tercera copia
+    if(tipoServicio === 'domicilio') {
+        ticketsHtml += '<div style="height:40px;"></div>' + generarTicket("COPIA DOMICILIO");
+    }
+
     const contenidoFinal = `<html><body style="margin:0; display:flex; flex-direction:column; align-items:center;">
-        ${generarTicket("COPIA CAJA")}
-        <div style="height:40px;"></div>
-        ${generarTicket("COPIA COCINA")}
+        ${ticketsHtml}
     </body></html>`;
 
     const f = document.getElementById('printFrame');
