@@ -22,6 +22,9 @@
 
         header{background:linear-gradient(135deg,var(--accent),var(--accent2));padding:20px;text-align:center;font-weight:900;color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 10px rgba(0,0,0,0.3);letter-spacing:1px;}
         .config-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:24px;cursor:pointer;background:rgba(0,0,0,0.2);padding:8px;border-radius:50%;line-height:1;}
+        
+        /* Botón Fullscreen en Header */
+        .fs-icon{position:absolute;left:20px;top:50%;transform:translateY(-50%);font-size:20px;cursor:pointer;background:rgba(0,0,0,0.2);padding:8px;border-radius:50%;line-height:1;}
 
         .main-wrapper{max-width:1200px;margin:auto;padding:20px;display:grid;grid-template-columns:1fr;gap:20px; padding-bottom: 120px;}
 
@@ -112,6 +115,7 @@
 </div>
 
 <header>
+    <span class="fs-icon" onclick="toggleFullScreen()">⛶</span>
     🔥 ASADERO TAMARINDO
     <span class="config-icon" onclick="toggleConfig()">⚙️</span>
 </header>
@@ -188,6 +192,20 @@
 <iframe id="printFrame" style="display:none;"></iframe>
 
 <script>
+// --- NUEVA FUNCIÓN PANTALLA COMPLETA ---
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => {
+            console.log(`Error intentando activar pantalla completa: ${err.message}`);
+        });
+    } else {
+        if (document.exitFullscreen) {
+            document.exitFullscreen();
+        }
+    }
+}
+
+// Lógica original intacta
 const URL_USUARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPjmET3KGocH1nu-BSY_rbDB5FTrIpRNL5h_jFaCQq5h3sOoQnkb3aixwq5WQL-fQ8FLe3tdtAiZN/pub?output=csv"; 
 const URL_MENU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU3FT66_0vVAygWPIDfjIAhGwnKGWeBhDB3cVrzkMZQRP6M0ONz2_xwy-u8Q7muAoP6oa4QFxXc7xb/pub?output=csv";
 const IMG_DEFAULT = "https://via.placeholder.com/150?text=COMIDA";
@@ -235,6 +253,10 @@ function validarAcceso() {
         }
         usuarioActivo = u; 
         document.getElementById('login-overlay').style.display = 'none'; 
+        
+        // ACTIVAR PANTALLA COMPLETA AL ENTRAR (Interacción requerida)
+        toggleFullScreen();
+        
         iniciarApp();
     } else { 
         document.getElementById('login-error').style.display = 'block'; 
@@ -256,12 +278,10 @@ function init(){
 }
 
 function toggleConfig() { document.getElementById('panelConfig').classList.toggle('hidden'); }
-
 function saveConfig() { 
     localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); 
     localStorage.setItem("tamarindo_precio_domi", document.getElementById("configPrecioDomi").value);
 }
-
 function setServicio(tipo) {
     tipoServicio = tipo;
     document.getElementById('btnLocal').classList.toggle('active', tipo === 'local');
@@ -270,13 +290,11 @@ function setServicio(tipo) {
     document.getElementById('sectionMesas').classList.toggle('hidden', tipo === 'domicilio');
     calcularTotal();
 }
-
 function ajustarMesas(cambio) {
     let nuevo = Math.max(1, parseInt(document.getElementById("displayNumMesas").textContent) + cambio);
     document.getElementById("displayNumMesas").textContent = nuevo;
     localStorage.setItem("tamarindo_mesas", nuevo); crearMesas();
 }
-
 function crearMesas(){
     const cont = document.getElementById("mesas"), n = parseInt(document.getElementById("displayNumMesas").textContent);
     cont.innerHTML = "";
@@ -290,13 +308,11 @@ function crearMesas(){
         cont.appendChild(b);
     }
 }
-
 function cambiarComensales(n){
     numComensales = Math.max(1, numComensales + n);
     document.getElementById("cantComensales").textContent = numComensales;
     renderComensales();
 }
-
 function renderComensales(){
     const cont = document.getElementById("contenedor-pedidos"), cats = [...new Set(menu.map(m=>m.cat))].filter(Boolean);
     cont.innerHTML = "";
@@ -308,13 +324,11 @@ function renderComensales(){
     }
     calcularTotal();
 }
-
 function setCat(idx, cat, btn) {
     const parent = document.getElementById(`cats-${idx}`);
     parent.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
     btn.classList.add('active'); renderChips(idx, cat);
 }
-
 function renderChips(idx, cat){
     document.getElementById(`chips-${idx}`).innerHTML = menu.filter(m => m.cat === cat).map(p => {
         const foto = (p.img && p.img.length > 5) ? p.img : IMG_DEFAULT;
@@ -324,63 +338,49 @@ function renderChips(idx, cat){
                 </div>`;
     }).join("");
 }
-
 function agregarPlato(idx, n){
     if(!pedidosPorPersona[idx]) pedidosPorPersona[idx] = [];
     pedidosPorPersona[idx].push(menu.find(m=>m.nombre === n));
     actualizarResumenPersona(idx); calcularTotal();
 }
-
 function actualizarResumenPersona(idx){
     const cont = document.getElementById(`resumen-${idx}`), items = pedidosPorPersona[idx] || [];
     const agrupado = items.reduce((acc, curr) => { if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; acc[curr.nombre].cant += 1; return acc; }, {});
     cont.innerHTML = Object.values(agrupado).map((p) => `<div class="item-pedido"><div class="item-info"><span>${p.nombre}</span><small>Cant: ${p.cant} x $${p.precio.toLocaleString()}</small></div><b class="item-precio">$${(p.precio * p.cant).toLocaleString()}</b><button class="del-btn" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button></div>`).join("");
 }
-
 function quitarPlato(idx, nombre){
     const index = pedidosPorPersona[idx].findIndex(p => p.nombre === nombre);
     if(index !== -1) pedidosPorPersona[idx].splice(index, 1);
     actualizarResumenPersona(idx); calcularTotal();
 }
-
 function calcularTotal(){
     let t = 0, count = 0;
     Object.values(pedidosPorPersona).forEach(pArr => {
         t += pArr.reduce((sum, p) => sum + p.precio, 0);
         count += pArr.length;
     });
-
     if(tipoServicio === 'domicilio') {
         const pDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
         t += pDomi;
     }
-
     document.getElementById("total-val-fixed").textContent = `$${t.toLocaleString()}`;
     document.getElementById("badge-items").textContent = `${count} Platos`;
     const mesaActiva = document.querySelector("#mesas .active")?.textContent || "N/A";
     document.getElementById("label-mesa-domi").textContent = tipoServicio === 'domicilio' ? "🛵 DOMICILIO" : `📍 MESA: ${mesaActiva}`;
     return t;
 }
-
 function nuevoPedido(){
     if(!confirm("¿Borrar pedido actual?")) return;
-    numComensales = 1; 
-    pedidosPorPersona = {};
+    numComensales = 1; pedidosPorPersona = {};
     document.getElementById("cantComensales").textContent = 1;
     document.querySelectorAll("input, textarea").forEach(i => { if(i.id !== "configWa" && i.id !== "configPrecioDomi") i.value = ""; });
-    
-    // Borrar selección de mesa visual
     document.querySelectorAll("#mesas .btn").forEach(x => x.classList.remove("active"));
-    
-    setServicio('local'); 
-    renderComensales();
+    setServicio('local'); renderComensales();
 }
-
 function wa(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", total = calcularTotal(), targetNum = document.getElementById("configWa").value;
     if(total === 0) return alert("Pedido vacío");
     let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n👤 *Atendido por:* ${usuarioActivo.toUpperCase()}\n`;
-    
     if(tipoServicio === 'domicilio'){
         const obs = document.getElementById('domiObs').value;
         const pDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
@@ -389,9 +389,7 @@ function wa(){
         Object.keys(pedidosPorPersona).forEach(idx => {
             if(pedidosPorPersona[idx].length > 0){
                 const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
-                for (const [nombre, cant] of Object.entries(agrupado)) {
-                    msg += `• ${cant}x ${nombre}\n`;
-                }
+                for (const [nombre, cant] of Object.entries(agrupado)) { msg += `• ${cant}x ${nombre}\n`; }
             }
         });
         if(pDomi > 0) msg += `🛵 *Valor Domicilio:* $${pDomi.toLocaleString()}\n`;
@@ -412,20 +410,12 @@ function wa(){
     msg += `--------------------------\n💰 *TOTAL: $${total.toLocaleString()}*`;
     window.open(`https://wa.me/${targetNum}?text=${encodeURIComponent(msg)}`);
 }
-
 function imprimir(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", totalVal = calcularTotal();
     const pDomi = (tipoServicio === 'domicilio') ? (parseInt(document.getElementById("configPrecioDomi").value) || 0) : 0;
     if(totalVal === 0) return alert("No hay productos");
-
     const fecha = new Date().toLocaleString();
-    let headerInfo = "";
-    if(tipoServicio === 'domicilio'){
-        headerInfo = `DOMICILIO\nCliente: ${document.getElementById('domiNombre').value}\nDireccion: ${document.getElementById('domiDir').value}\nObs: ${document.getElementById('domiObs').value}`;
-    } else {
-        headerInfo = `MESA: ${mesa}\nNOTAS: ${document.getElementById('localObs').value}`;
-    }
-
+    let headerInfo = (tipoServicio === 'domicilio') ? `DOMICILIO\nCliente: ${document.getElementById('domiNombre').value}\nDireccion: ${document.getElementById('domiDir').value}\nObs: ${document.getElementById('domiObs').value}` : `MESA: ${mesa}\nNOTAS: ${document.getElementById('localObs').value}`;
     let detalleProductos = "";
     Object.keys(pedidosPorPersona).forEach(idx => {
         if(pedidosPorPersona[idx].length > 0){
@@ -437,39 +427,23 @@ function imprimir(){
             }
         }
     });
-
     const generarTicket = (titulo) => `
         <div style="width:280px; padding:10px; font-family:'Courier New', monospace; font-size:12px; color:black; border-bottom:1px dashed #ccc; margin-bottom:20px;">
-            <div style="text-align:center;">
-                <h3 style="margin:0;">ASADERO TAMARINDO</h3>
-                <p style="margin:5px 0;">*** ${titulo} ***</p>
-                <p style="margin:2px 0; font-size:10px;">${fecha}</p>
-            </div>
+            <div style="text-align:center;"><h3 style="margin:0;">ASADERO TAMARINDO</h3><p style="margin:5px 0;">*** ${titulo} ***</p><p style="margin:2px 0; font-size:10px;">${fecha}</p></div>
             <hr style="border:none; border-top:1px dashed black;">
             <pre style="margin:0; white-space:pre-wrap;">Atiende: ${usuarioActivo.toUpperCase()}\n${headerInfo}</pre>
             <hr style="border:none; border-top:1px dashed black;">
             <pre style="margin:0; white-space:pre-wrap;">${detalleProductos}</pre>
             ${pDomi > 0 ? `<div style="display:flex; justify-content:space-between;"><span>DOMICILIO:</span> <span>$${pDomi.toLocaleString()}</span></div>` : ''}
             <hr style="border:none; border-top:1px dashed black;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;">
-                <span>TOTAL:</span> <span>$${totalVal.toLocaleString()}</span>
-            </div>
+            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;"><span>TOTAL:</span> <span>$${totalVal.toLocaleString()}</span></div>
             <div style="text-align:center; margin-top:15px; font-size:10px;">¡Gracias por su compra!</div>
-        </div>
-    `;
-
+        </div>`;
     let ticketsHtml = generarTicket("COPIA CAJA") + '<div style="height:40px;"></div>' + generarTicket("COPIA COCINA");
-    if(tipoServicio === 'domicilio') {
-        ticketsHtml += '<div style="height:40px;"></div>' + generarTicket("COPIA DOMICILIO");
-    }
-
-    const contenidoFinal = `<html><body style="margin:0; display:flex; flex-direction:column; align-items:center;">
-        ${ticketsHtml}
-    </body></html>`;
-
+    if(tipoServicio === 'domicilio') ticketsHtml += '<div style="height:40px;"></div>' + generarTicket("COPIA DOMICILIO");
     const f = document.getElementById('printFrame');
     f.contentWindow.document.open();
-    f.contentWindow.document.write(contenidoFinal);
+    f.contentWindow.document.write(`<html><body style="margin:0; display:flex; flex-direction:column; align-items:center;">${ticketsHtml}</body></html>`);
     f.contentWindow.document.close();
     setTimeout(() => { f.contentWindow.print(); }, 500);
 }
