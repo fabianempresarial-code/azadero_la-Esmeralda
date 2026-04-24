@@ -22,8 +22,6 @@
 
         header{background:linear-gradient(135deg,var(--accent),var(--accent2));padding:20px;text-align:center;font-weight:900;color:white;position:sticky;top:0;z-index:100;box-shadow:0 4px 10px rgba(0,0,0,0.3);letter-spacing:1px;}
         .config-icon{position:absolute;right:20px;top:50%;transform:translateY(-50%);font-size:24px;cursor:pointer;background:rgba(0,0,0,0.2);padding:8px;border-radius:50%;line-height:1;}
-        
-        /* Botón Fullscreen en Header */
         .fs-icon{position:absolute;left:20px;top:50%;transform:translateY(-50%);font-size:20px;cursor:pointer;background:rgba(0,0,0,0.2);padding:8px;border-radius:50%;line-height:1;}
 
         .main-wrapper{max-width:1200px;margin:auto;padding:20px;display:grid;grid-template-columns:1fr;gap:20px; padding-bottom: 120px;}
@@ -58,7 +56,10 @@
         .item-pedido {
             display:flex; justify-content:space-between; align-items:center;
             background:rgba(0,0,0,0.4); padding:12px; border-radius:14px; margin-bottom:10px; gap:10px;
+            animation: slideIn 0.3s ease-out;
         }
+        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+
         .item-info span { font-weight:bold; color:white; display:block; }
         .item-info small { color:var(--accent); }
         .item-precio { font-weight:bold; color:var(--accent); font-size:16px; }
@@ -192,20 +193,16 @@
 <iframe id="printFrame" style="display:none;"></iframe>
 
 <script>
-// --- NUEVA FUNCIÓN PANTALLA COMPLETA ---
 function toggleFullScreen() {
     if (!document.fullscreenElement) {
         document.documentElement.requestFullscreen().catch(err => {
-            console.log(`Error intentando activar pantalla completa: ${err.message}`);
+            console.log(`Error: ${err.message}`);
         });
     } else {
-        if (document.exitFullscreen) {
-            document.exitFullscreen();
-        }
+        if (document.exitFullscreen) document.exitFullscreen();
     }
 }
 
-// Lógica original intacta
 const URL_USUARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPjmET3KGocH1nu-BSY_rbDB5FTrIpRNL5h_jFaCQq5h3sOoQnkb3aixwq5WQL-fQ8FLe3tdtAiZN/pub?output=csv"; 
 const URL_MENU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU3FT66_0vVAygWPIDfjIAhGwnKGWeBhDB3cVrzkMZQRP6M0ONz2_xwy-u8Q7muAoP6oa4QFxXc7xb/pub?output=csv";
 const IMG_DEFAULT = "https://via.placeholder.com/150?text=COMIDA";
@@ -247,16 +244,10 @@ function validarAcceso() {
         if(remember) {
             localStorage.setItem("tamarindo_user", u);
             localStorage.setItem("tamarindo_pass", p);
-        } else {
-            localStorage.removeItem("tamarindo_user");
-            localStorage.removeItem("tamarindo_pass");
         }
         usuarioActivo = u; 
         document.getElementById('login-overlay').style.display = 'none'; 
-        
-        // ACTIVAR PANTALLA COMPLETA AL ENTRAR (Interacción requerida)
         toggleFullScreen();
-        
         iniciarApp();
     } else { 
         document.getElementById('login-error').style.display = 'block'; 
@@ -338,21 +329,42 @@ function renderChips(idx, cat){
                 </div>`;
     }).join("");
 }
+
+// MODIFICACIÓN PRINCIPAL: NUEVOS PLATOS AL PRINCIPIO
 function agregarPlato(idx, n){
     if(!pedidosPorPersona[idx]) pedidosPorPersona[idx] = [];
-    pedidosPorPersona[idx].push(menu.find(m=>m.nombre === n));
-    actualizarResumenPersona(idx); calcularTotal();
+    // Usamos unshift para que se guarde al inicio del array
+    pedidosPorPersona[idx].unshift(menu.find(m=>m.nombre === n));
+    actualizarResumenPersona(idx); 
+    calcularTotal();
 }
+
 function actualizarResumenPersona(idx){
     const cont = document.getElementById(`resumen-${idx}`), items = pedidosPorPersona[idx] || [];
-    const agrupado = items.reduce((acc, curr) => { if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; acc[curr.nombre].cant += 1; return acc; }, {});
-    cont.innerHTML = Object.values(agrupado).map((p) => `<div class="item-pedido"><div class="item-info"><span>${p.nombre}</span><small>Cant: ${p.cant} x $${p.precio.toLocaleString()}</small></div><b class="item-precio">$${(p.precio * p.cant).toLocaleString()}</b><button class="del-btn" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button></div>`).join("");
+    // Agrupamos manteniendo el orden de inserción (el primero es el más nuevo)
+    const agrupado = items.reduce((acc, curr) => { 
+        if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; 
+        acc[curr.nombre].cant += 1; 
+        return acc; 
+    }, {});
+
+    cont.innerHTML = Object.values(agrupado).map((p) => `
+        <div class="item-pedido">
+            <div class="item-info">
+                <span>${p.nombre}</span>
+                <small>Cant: ${p.cant} x $${p.precio.toLocaleString()}</small>
+            </div>
+            <b class="item-precio">$${(p.precio * p.cant).toLocaleString()}</b>
+            <button class="del-btn" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button>
+        </div>`).join("");
 }
+
 function quitarPlato(idx, nombre){
     const index = pedidosPorPersona[idx].findIndex(p => p.nombre === nombre);
     if(index !== -1) pedidosPorPersona[idx].splice(index, 1);
     actualizarResumenPersona(idx); calcularTotal();
 }
+
 function calcularTotal(){
     let t = 0, count = 0;
     Object.values(pedidosPorPersona).forEach(pArr => {
@@ -360,8 +372,7 @@ function calcularTotal(){
         count += pArr.length;
     });
     if(tipoServicio === 'domicilio') {
-        const pDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
-        t += pDomi;
+        t += parseInt(document.getElementById("configPrecioDomi").value) || 0;
     }
     document.getElementById("total-val-fixed").textContent = `$${t.toLocaleString()}`;
     document.getElementById("badge-items").textContent = `${count} Platos`;
@@ -369,6 +380,7 @@ function calcularTotal(){
     document.getElementById("label-mesa-domi").textContent = tipoServicio === 'domicilio' ? "🛵 DOMICILIO" : `📍 MESA: ${mesaActiva}`;
     return t;
 }
+
 function nuevoPedido(){
     if(!confirm("¿Borrar pedido actual?")) return;
     numComensales = 1; pedidosPorPersona = {};
@@ -377,13 +389,13 @@ function nuevoPedido(){
     document.querySelectorAll("#mesas .btn").forEach(x => x.classList.remove("active"));
     setServicio('local'); renderComensales();
 }
+
 function wa(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", total = calcularTotal(), targetNum = document.getElementById("configWa").value;
     if(total === 0) return alert("Pedido vacío");
     let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n👤 *Atendido por:* ${usuarioActivo.toUpperCase()}\n`;
     if(tipoServicio === 'domicilio'){
         const obs = document.getElementById('domiObs').value;
-        const pDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
         msg += `🛵 *DOMICILIO*\n👤 *Cli:* ${document.getElementById('domiNombre').value || 'N/A'}\n📞 *Tel:* ${document.getElementById('domiTel').value || 'N/A'}\n📍 *Dir:* ${document.getElementById('domiDir').value || 'N/A'}\n${obs?'📝 *Obs:* '+obs+'\n':''}`;
         msg += `--------------------------\n`;
         Object.keys(pedidosPorPersona).forEach(idx => {
@@ -392,7 +404,6 @@ function wa(){
                 for (const [nombre, cant] of Object.entries(agrupado)) { msg += `• ${cant}x ${nombre}\n`; }
             }
         });
-        if(pDomi > 0) msg += `🛵 *Valor Domicilio:* $${pDomi.toLocaleString()}\n`;
     } else { 
         const obsLoc = document.getElementById('localObs').value;
         msg += `📍 *Mesa:* ${mesa}\n${obsLoc ? '📝 *Notas:* ' + obsLoc + '\n' : ''}`; 
@@ -400,7 +411,7 @@ function wa(){
         Object.keys(pedidosPorPersona).forEach(idx => {
             if(pedidosPorPersona[idx].length > 0){
                 msg += `👤 *Pedido ${idx}:*\n`;
-                const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
+                const agrupado = [...pedidosPorPersona[idx]].reverse().reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
                 for (const [nombre, cant] of Object.entries(agrupado)) {
                     msg += ` - ${cant}x ${nombre} ($${(menu.find(m=>m.nombre===nombre).precio*cant).toLocaleString()})\n`;
                 }
@@ -410,6 +421,7 @@ function wa(){
     msg += `--------------------------\n💰 *TOTAL: $${total.toLocaleString()}*`;
     window.open(`https://wa.me/${targetNum}?text=${encodeURIComponent(msg)}`);
 }
+
 function imprimir(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", totalVal = calcularTotal();
     const pDomi = (tipoServicio === 'domicilio') ? (parseInt(document.getElementById("configPrecioDomi").value) || 0) : 0;
@@ -437,7 +449,6 @@ function imprimir(){
             ${pDomi > 0 ? `<div style="display:flex; justify-content:space-between;"><span>DOMICILIO:</span> <span>$${pDomi.toLocaleString()}</span></div>` : ''}
             <hr style="border:none; border-top:1px dashed black;">
             <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;"><span>TOTAL:</span> <span>$${totalVal.toLocaleString()}</span></div>
-            <div style="text-align:center; margin-top:15px; font-size:10px;">¡Gracias por su compra!</div>
         </div>`;
     let ticketsHtml = generarTicket("COPIA CAJA") + '<div style="height:40px;"></div>' + generarTicket("COPIA COCINA");
     if(tipoServicio === 'domicilio') ticketsHtml += '<div style="height:40px;"></div>' + generarTicket("COPIA DOMICILIO");
