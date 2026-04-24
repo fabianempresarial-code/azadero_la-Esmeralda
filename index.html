@@ -102,14 +102,11 @@
 <div id="login-overlay">
     <div class="login-card">
         <h2 style="color:var(--accent); margin-top:0;">🔥 ACCESO</h2>
-        <p style="font-size:14px; opacity:0.7;">Asadero Tamarindo</p>
         <input type="text" id="user" class="input-field" placeholder="Usuario">
         <input type="password" id="pass" class="input-field" placeholder="Contraseña">
-        
         <label class="remember-me">
             <input type="checkbox" id="remember"> Recordar mis datos
         </label>
-
         <button class="btn" style="width:100%; background:var(--accent); color:black;" onclick="validarAcceso()">ENTRAR</button>
         <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Datos incorrectos</p>
     </div>
@@ -125,14 +122,10 @@
     <div class="sidebar">
         <div id="panelConfig" class="card hidden">
             <label>⚙️ Panel de Control</label>
-            <label style="font-size:10px;">WhatsApp Destino</label>
             <input type="tel" id="configWa" class="input-field" placeholder="WhatsApp Destino" onchange="saveConfig()">
-            
-            <label style="font-size:10px;">Precio Domicilio ($)</label>
-            <input type="number" id="configPrecioDomi" class="input-field" placeholder="Ej: 2000" onchange="saveConfig(); calcularTotal();">
-            
-            <label style="font-size:10px;">Número de Mesas</label>
-            <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; align-items:center;">
+            <input type="number" id="configPrecioDomi" class="input-field" placeholder="Precio Domicilio" onchange="saveConfig(); calcularTotal();">
+            <label>Número de Mesas</label>
+            <div class="grid" style="grid-template-columns: 1fr 2fr 1fr;">
                 <button class="btn" onclick="ajustarMesas(-1)">➖</button>
                 <span id="displayNumMesas" style="font-size:1.5rem; font-weight:bold; text-align:center;">8</span>
                 <button class="btn" onclick="ajustarMesas(1)">➕</button>
@@ -146,18 +139,16 @@
                 <button class="btn active" id="btnLocal" onclick="setServicio('local')">LOCAL</button>
                 <button class="btn" id="btnDomi" onclick="setServicio('domicilio')">DOMICILIO</button>
             </div>
-            
             <div id="formDomicilio" class="domi-form hidden" style="margin-top:15px;">
                 <input type="text" id="domiNombre" class="input-field" placeholder="Cliente">
                 <input type="tel" id="domiTel" class="input-field" placeholder="Teléfono">
                 <input type="text" id="domiDir" class="input-field" placeholder="Dirección">
-                <textarea id="domiObs" class="input-field" placeholder="Observaciones Domicilio..." style="height: 60px;"></textarea>
+                <textarea id="domiObs" class="input-field" placeholder="Observaciones Domicilio..."></textarea>
             </div>
-
             <div id="sectionMesas" style="margin-top:15px;">
                 <label>📍 Mesa</label>
-                <div class="grid" id="mesas" style="margin-bottom:10px;"></div>
-                <textarea id="localObs" class="input-field" placeholder="Notas de la mesa..." style="height: 60px;"></textarea>
+                <div class="grid" id="mesas"></div>
+                <textarea id="localObs" class="input-field" placeholder="Notas de la mesa..." style="margin-top:10px;"></textarea>
             </div>
         </div>
     </div>
@@ -165,7 +156,7 @@
     <div class="content">
         <div class="card">
             <label>👤 Cantidad de Pedidos</label>
-            <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; align-items:center; max-width: 300px;">
+            <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; max-width: 300px;">
                 <button class="btn" onclick="cambiarComensales(-1)">➖</button>
                 <span id="cantComensales" style="font-size:1.6rem; font-weight:bold; text-align: center;">1</span>
                 <button class="btn" onclick="cambiarComensales(1)">➕</button>
@@ -193,11 +184,32 @@
 <iframe id="printFrame" style="display:none;"></iframe>
 
 <script>
+// --- NUEVA LÓGICA DE DIRECCIÓN POR MESA (QR) ---
+function detectarMesaPorURL() {
+    const params = new URLSearchParams(window.location.search);
+    const mesaURL = params.get('mesa');
+    if (mesaURL) {
+        // Esperamos un segundo a que las mesas se rendericen para activarla
+        setTimeout(() => {
+            seleccionarMesa(mesaURL);
+        }, 500);
+    }
+}
+
+function seleccionarMesa(numero) {
+    const botones = document.querySelectorAll("#mesas .btn");
+    botones.forEach(b => {
+        if (b.textContent == numero) {
+            b.click(); // Simula el click en la mesa correspondiente
+            b.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+}
+// ----------------------------------------------
+
 function toggleFullScreen() {
     if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => {
-            console.log(`Error: ${err.message}`);
-        });
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
     } else {
         if (document.exitFullscreen) document.exitFullscreen();
     }
@@ -247,7 +259,6 @@ function validarAcceso() {
         }
         usuarioActivo = u; 
         document.getElementById('login-overlay').style.display = 'none'; 
-        toggleFullScreen();
         iniciarApp();
     } else { 
         document.getElementById('login-error').style.display = 'block'; 
@@ -258,6 +269,7 @@ function iniciarApp() {
     fetch(URL_MENU).then(r=>r.text()).then(t=>{
         menu = parseCSV(t).slice(1).map(f=>({ cat: f[0], nombre: f[1], precio: parseInt(f[3]?.replace(/[^0-9]/g, '')) || 0, img: f[4]?.trim() || "" })).filter(m => m.nombre);
         init();
+        detectarMesaPorURL(); // EJECUTAR DETECCIÓN DE QR
     });
 }
 
@@ -330,10 +342,8 @@ function renderChips(idx, cat){
     }).join("");
 }
 
-// MODIFICACIÓN PRINCIPAL: NUEVOS PLATOS AL PRINCIPIO
 function agregarPlato(idx, n){
     if(!pedidosPorPersona[idx]) pedidosPorPersona[idx] = [];
-    // Usamos unshift para que se guarde al inicio del array
     pedidosPorPersona[idx].unshift(menu.find(m=>m.nombre === n));
     actualizarResumenPersona(idx); 
     calcularTotal();
@@ -341,19 +351,14 @@ function agregarPlato(idx, n){
 
 function actualizarResumenPersona(idx){
     const cont = document.getElementById(`resumen-${idx}`), items = pedidosPorPersona[idx] || [];
-    // Agrupamos manteniendo el orden de inserción (el primero es el más nuevo)
     const agrupado = items.reduce((acc, curr) => { 
         if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; 
         acc[curr.nombre].cant += 1; 
         return acc; 
     }, {});
-
     cont.innerHTML = Object.values(agrupado).map((p) => `
         <div class="item-pedido">
-            <div class="item-info">
-                <span>${p.nombre}</span>
-                <small>Cant: ${p.cant} x $${p.precio.toLocaleString()}</small>
-            </div>
+            <div class="item-info"><span>${p.nombre}</span><small>Cant: ${p.cant}</small></div>
             <b class="item-precio">$${(p.precio * p.cant).toLocaleString()}</b>
             <button class="del-btn" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button>
         </div>`).join("");
@@ -371,9 +376,7 @@ function calcularTotal(){
         t += pArr.reduce((sum, p) => sum + p.precio, 0);
         count += pArr.length;
     });
-    if(tipoServicio === 'domicilio') {
-        t += parseInt(document.getElementById("configPrecioDomi").value) || 0;
-    }
+    if(tipoServicio === 'domicilio') t += parseInt(document.getElementById("configPrecioDomi").value) || 0;
     document.getElementById("total-val-fixed").textContent = `$${t.toLocaleString()}`;
     document.getElementById("badge-items").textContent = `${count} Platos`;
     const mesaActiva = document.querySelector("#mesas .active")?.textContent || "N/A";
@@ -395,68 +398,32 @@ function wa(){
     if(total === 0) return alert("Pedido vacío");
     let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n👤 *Atendido por:* ${usuarioActivo.toUpperCase()}\n`;
     if(tipoServicio === 'domicilio'){
-        const obs = document.getElementById('domiObs').value;
-        msg += `🛵 *DOMICILIO*\n👤 *Cli:* ${document.getElementById('domiNombre').value || 'N/A'}\n📞 *Tel:* ${document.getElementById('domiTel').value || 'N/A'}\n📍 *Dir:* ${document.getElementById('domiDir').value || 'N/A'}\n${obs?'📝 *Obs:* '+obs+'\n':''}`;
-        msg += `--------------------------\n`;
-        Object.keys(pedidosPorPersona).forEach(idx => {
-            if(pedidosPorPersona[idx].length > 0){
-                const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
-                for (const [nombre, cant] of Object.entries(agrupado)) { msg += `• ${cant}x ${nombre}\n`; }
-            }
-        });
+        msg += `🛵 *DOMICILIO*\n👤 *Cli:* ${document.getElementById('domiNombre').value}\n📍 *Dir:* ${document.getElementById('domiDir').value}\n`;
     } else { 
-        const obsLoc = document.getElementById('localObs').value;
-        msg += `📍 *Mesa:* ${mesa}\n${obsLoc ? '📝 *Notas:* ' + obsLoc + '\n' : ''}`; 
-        msg += `--------------------------\n`;
-        Object.keys(pedidosPorPersona).forEach(idx => {
-            if(pedidosPorPersona[idx].length > 0){
-                msg += `👤 *Pedido ${idx}:*\n`;
-                const agrupado = [...pedidosPorPersona[idx]].reverse().reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
-                for (const [nombre, cant] of Object.entries(agrupado)) {
-                    msg += ` - ${cant}x ${nombre} ($${(menu.find(m=>m.nombre===nombre).precio*cant).toLocaleString()})\n`;
-                }
-            }
-        });
+        msg += `📍 *Mesa:* ${mesa}\n`; 
     }
+    msg += `--------------------------\n`;
+    Object.keys(pedidosPorPersona).forEach(idx => {
+        if(pedidosPorPersona[idx].length > 0){
+            msg += `👤 *Pedido ${idx}:*\n`;
+            const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
+            for (const [nombre, cant] of Object.entries(agrupado)) { msg += ` - ${cant}x ${nombre}\n`; }
+        }
+    });
     msg += `--------------------------\n💰 *TOTAL: $${total.toLocaleString()}*`;
     window.open(`https://wa.me/${targetNum}?text=${encodeURIComponent(msg)}`);
 }
 
 function imprimir(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", totalVal = calcularTotal();
-    const pDomi = (tipoServicio === 'domicilio') ? (parseInt(document.getElementById("configPrecioDomi").value) || 0) : 0;
     if(totalVal === 0) return alert("No hay productos");
     const fecha = new Date().toLocaleString();
-    let headerInfo = (tipoServicio === 'domicilio') ? `DOMICILIO\nCliente: ${document.getElementById('domiNombre').value}\nDireccion: ${document.getElementById('domiDir').value}\nObs: ${document.getElementById('domiObs').value}` : `MESA: ${mesa}\nNOTAS: ${document.getElementById('localObs').value}`;
-    let detalleProductos = "";
-    Object.keys(pedidosPorPersona).forEach(idx => {
-        if(pedidosPorPersona[idx].length > 0){
-            detalleProductos += `\n[ PEDIDO ${idx} ]\n`;
-            const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
-            for (const [nombre, cant] of Object.entries(agrupado)) {
-                let p = menu.find(m=>m.nombre===nombre);
-                detalleProductos += `${cant}x ${nombre.padEnd(18,'.')} $${(p.precio*cant).toLocaleString()}\n`;
-            }
-        }
-    });
-    const generarTicket = (titulo) => `
-        <div style="width:280px; padding:10px; font-family:'Courier New', monospace; font-size:12px; color:black; border-bottom:1px dashed #ccc; margin-bottom:20px;">
-            <div style="text-align:center;"><h3 style="margin:0;">ASADERO TAMARINDO</h3><p style="margin:5px 0;">*** ${titulo} ***</p><p style="margin:2px 0; font-size:10px;">${fecha}</p></div>
-            <hr style="border:none; border-top:1px dashed black;">
-            <pre style="margin:0; white-space:pre-wrap;">Atiende: ${usuarioActivo.toUpperCase()}\n${headerInfo}</pre>
-            <hr style="border:none; border-top:1px dashed black;">
-            <pre style="margin:0; white-space:pre-wrap;">${detalleProductos}</pre>
-            ${pDomi > 0 ? `<div style="display:flex; justify-content:space-between;"><span>DOMICILIO:</span> <span>$${pDomi.toLocaleString()}</span></div>` : ''}
-            <hr style="border:none; border-top:1px dashed black;">
-            <div style="display:flex; justify-content:space-between; font-weight:bold; font-size:14px;"><span>TOTAL:</span> <span>$${totalVal.toLocaleString()}</span></div>
-        </div>`;
-    let ticketsHtml = generarTicket("COPIA CAJA") + '<div style="height:40px;"></div>' + generarTicket("COPIA COCINA");
-    if(tipoServicio === 'domicilio') ticketsHtml += '<div style="height:40px;"></div>' + generarTicket("COPIA DOMICILIO");
+    let ticketsHtml = `<div style="width:280px; padding:10px; font-family:monospace;"><h3>ASADERO TAMARINDO</h3><p>${fecha}</p><p>Mesa: ${mesa}</p><hr><p>TOTAL: $${totalVal.toLocaleString()}</p></div>`;
     const f = document.getElementById('printFrame');
     f.contentWindow.document.open();
-    f.contentWindow.document.write(`<html><body style="margin:0; display:flex; flex-direction:column; align-items:center;">${ticketsHtml}</body></html>`);
+    f.contentWindow.document.write(ticketsHtml);
     f.contentWindow.document.close();
-    setTimeout(() => { f.contentWindow.print(); }, 500);
+    f.contentWindow.print();
 }
 </script>
 </body>
