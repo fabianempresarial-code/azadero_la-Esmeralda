@@ -35,6 +35,7 @@
         .card{background:var(--card);padding:20px;border-radius:24px;margin-bottom:15px;box-shadow:0 10px 25px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.05);}
         .grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(60px, 1fr));gap:10px;}
         .btn{padding:14px;border:none;border-radius:14px;background:var(--soft);color:white;cursor:pointer;font-weight:bold;transition:0.2s;}
+        .btn:active{transform:scale(0.98);}
         .btn.active{background:var(--accent);color:#000;box-shadow:0 0 15px rgba(245,158,11,0.4);}
 
         .hidden { display: none !important; }
@@ -49,14 +50,13 @@
             display:flex; align-items:center; gap:12px; padding:12px; background:#020617;
             border:1px solid var(--soft); border-radius:18px; cursor:pointer; transition:0.2s;
         }
-        .chip:active{transform:scale(0.95);}
         .chip img { width:65px; height:65px; border-radius:12px; object-fit:cover; }
         .chip-info b { display:block; font-size:15px; color:#ffffff; }
         .chip-info span { color:var(--accent); font-weight:bold; }
 
         .item-pedido {
             display:flex; justify-content:space-between; align-items:center;
-            background:rgba(0,0,0,0.4); padding:12px; border-radius:14px; margin-bottom:10px; gap:10px;
+            background:rgba(0,0,0,0.4); padding:12px; border-radius:14px; margin-bottom:10px;
         }
 
         .compact-footer {
@@ -70,18 +70,12 @@
         }
 
         .footer-top { display: flex; justify-content: space-between; align-items: center; }
-        .footer-info-group { line-height: 1.1; }
-        .footer-label { font-size: 11px; color: var(--accent); font-weight: 800; text-transform: uppercase; display: block; }
         .footer-total { font-size: 1.6rem; font-weight: 900; color: #fff; margin: 0; }
-        .footer-badge { background: var(--accent2); padding: 3px 8px; border-radius: 10px; font-size: 11px; font-weight: bold; }
-
         .footer-actions { display: flex; gap: 8px; }
-        .footer-actions button { 
-            flex: 1; height: 42px; border-radius: 12px; border: none; 
-            font-weight: bold; color: white; cursor: pointer; font-size: 14px; 
-        }
+        .footer-actions button { flex: 1; height: 42px; border-radius: 12px; border: none; font-weight: bold; color: white; cursor: pointer; }
 
-        label{display:block; margin-bottom:8px; font-size:13px; color:var(--accent); text-transform:uppercase; font-weight:800; letter-spacing:1px;}
+        label{display:block; margin-bottom:8px; font-size:11px; color:var(--accent); text-transform:uppercase; font-weight:800; letter-spacing:1px;}
+        .del-btn { background:var(--accent2); color:white; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-weight:bold; }
     </style>
 </head>
 <body>
@@ -94,8 +88,8 @@
         <label style="display:flex; align-items:center; justify-content:center; gap:8px; color:white; text-transform: none;">
             <input type="checkbox" id="remember"> Recordar mis datos
         </label>
-        <button class="btn" style="width:100%; background:var(--accent); color:black; margin-top:15px;" onclick="validarAcceso()">ENTRAR</button>
-        <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Datos incorrectos</p>
+        <button id="btnEntrar" class="btn" style="width:100%; background:var(--accent); color:black; margin-top:15px;" onclick="validarAcceso()">ENTRAR</button>
+        <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Datos incorrectos o cargando...</p>
     </div>
 </div>
 
@@ -108,12 +102,13 @@
 <div class="main-wrapper">
     <div class="sidebar">
         <div id="panelConfig" class="card hidden">
-            <label>⚙️ Panel de Control</label>
+            <label>⚙️ Control de Ventas</label>
+            <button class="btn" style="background:#22c55e; color:white; width:100%; margin-bottom:10px;" onclick="exportarVentasExcel()">📊 DESCARGAR EXCEL</button>
+            <button class="btn" style="background:var(--accent2); color:white; width:100%; margin-bottom:20px;" onclick="borrarBaseDatos()">🗑️ BORRAR HISTORIAL</button>
+            
+            <label>Configuración General</label>
             <input type="tel" id="configWa" class="input-field" placeholder="WhatsApp Destino" onchange="saveConfig()">
             <input type="number" id="configPrecioDomi" class="input-field" placeholder="Precio Domicilio" onchange="saveConfig(); calcularTotal();">
-            
-            <button class="btn" style="background:#22c55e; color:white; width:100%; margin-bottom:10px;" onclick="exportarVentasExcel()">📊 DESCARGAR EXCEL</button>
-            <button class="btn" style="background:var(--accent2); color:white; width:100%; margin-bottom:10px;" onclick="borrarBaseDatos()">🗑️ LIMPIAR TODO</button>
             
             <label>Número de Mesas</label>
             <div class="grid" style="grid-template-columns: 1fr 2fr 1fr;">
@@ -121,7 +116,7 @@
                 <span id="displayNumMesas" style="font-size:1.5rem; font-weight:bold; text-align:center;">8</span>
                 <button class="btn" onclick="ajustarMesas(1)">➕</button>
             </div>
-            <button class="btn" style="background:var(--accent); color:#000; margin-top:15px; width:100%;" onclick="toggleConfig()">CERRAR PANEL</button>
+            <button class="btn" style="background:var(--accent); color:#000; margin-top:15px; width:100%;" onclick="toggleConfig()">CERRAR</button>
         </div>
 
         <div class="card">
@@ -134,20 +129,18 @@
                 <input type="text" id="domiNombre" class="input-field" placeholder="Cliente">
                 <input type="tel" id="domiTel" class="input-field" placeholder="Teléfono">
                 <input type="text" id="domiDir" class="input-field" placeholder="Dirección">
-                <textarea id="domiObs" class="input-field" placeholder="Observaciones..."></textarea>
             </div>
             <div id="sectionMesas" style="margin-top:15px;">
-                <label>📍 Mesa</label>
+                <label>📍 Seleccionar Mesa</label>
                 <div class="grid" id="mesas"></div>
-                <textarea id="localObs" class="input-field" placeholder="Notas de la mesa..." style="margin-top:10px;"></textarea>
             </div>
         </div>
     </div>
 
     <div class="content">
         <div class="card">
-            <label>👤 Cantidad de Pedidos</label>
-            <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; max-width: 300px;">
+            <label>👤 N° Pedidos Separados</label>
+            <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; max-width: 250px;">
                 <button class="btn" onclick="cambiarComensales(-1)">➖</button>
                 <span id="cantComensales" style="font-size:1.6rem; font-weight:bold; text-align: center;">1</span>
                 <button class="btn" onclick="cambiarComensales(1)">➕</button>
@@ -159,11 +152,11 @@
 
 <div class="compact-footer">
     <div class="footer-top">
-        <div class="footer-info-group">
-            <span class="footer-label" id="label-mesa-domi">Mesa: N/A</span>
-            <span class="footer-total" id="total-val-fixed">$0</span>
+        <div style="line-height:1;">
+            <span id="label-mesa-domi" style="font-size:11px; color:var(--accent); font-weight:800;">📍 MESA: N/A</span>
+            <p class="footer-total" id="total-val-fixed">$0</p>
         </div>
-        <span class="footer-badge" id="badge-items">0 Platos</span>
+        <span id="badge-items" style="background:var(--accent2); padding:4px 10px; border-radius:10px; font-size:12px; font-weight:bold;">0 Platos</span>
     </div>
     <div class="footer-actions">
         <button style="background:var(--accent2); flex:0.4;" onclick="nuevoPedido()">NUEVO</button>
@@ -175,59 +168,72 @@
 <iframe id="printFrame" style="display:none;"></iframe>
 
 <script>
-// --- CONFIGURACIÓN DE BASE DE DATOS LOCAL (DEXIE) ---
+// --- DB LOCAL ---
 const db = new Dexie("EsmeraldaDB");
 db.version(1).stores({ ventas: '++id, fecha, atendido, servicio, total, mesa' });
 
-// --- VARIABLES ---
+// --- CONFIG ---
 const URL_USUARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPjmET3KGocH1nu-BSY_rbDB5FTrIpRNL5h_jFaCQq5h3sOoQnkb3aixwq5WQL-fQ8FLe3tdtAiZN/pub?output=csv"; 
 const URL_MENU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU3FT66_0vVAygWPIDfjIAhGwnKGWeBhDB3cVrzkMZQRP6M0ONz2_xwy-u8Q7muAoP6oa4QFxXc7xb/pub?output=csv";
-const IMG_DEFAULT = "https://via.placeholder.com/150?text=COMIDA";
 
 let db_usuarios = [], menu = [], numComensales = 1, pedidosPorPersona = {}, tipoServicio = 'local', usuarioActivo = "";
 
-// --- LOGIN Y CARGA ---
-window.onload = () => {
-    const savedUser = localStorage.getItem("tamarindo_user");
-    const savedPass = localStorage.getItem("tamarindo_pass");
-    if(savedUser) {
-        document.getElementById("user").value = savedUser;
-        document.getElementById("pass").value = savedPass;
-        document.getElementById("remember").checked = true;
-    }
-};
+// --- LOGIN LOGIC CORREGIDA ---
+async function cargarDatosIniciales() {
+    try {
+        const resU = await fetch(URL_USUARIOS);
+        const txtU = await resU.text();
+        db_usuarios = parseCSV(txtU).slice(1).map(f => ({ 
+            user: String(f[0] || "").trim().toLowerCase(), 
+            pass: String(f[1] || "").trim() 
+        }));
 
-fetch(URL_USUARIOS).then(r => r.text()).then(t => {
-    db_usuarios = parseCSV(t).slice(1).map(f => ({ user: f[0]?.trim(), pass: f[1]?.trim() }));
-});
+        const resM = await fetch(URL_MENU);
+        const txtM = await resM.text();
+        menu = parseCSV(txtM).slice(1).map(f => ({ 
+            cat: f[0], nombre: f[1], precio: parseInt(f[3]?.replace(/[^0-9]/g, '')) || 0, img: f[4]?.trim() 
+        })).filter(m => m.nombre);
+
+        // Auto-login si recordó datos
+        const sU = localStorage.getItem("tamarindo_user");
+        const sP = localStorage.getItem("tamarindo_pass");
+        if(sU && sP) {
+            document.getElementById("user").value = sU;
+            document.getElementById("pass").value = sP;
+            document.getElementById("remember").checked = true;
+        }
+    } catch (e) { console.error("Error cargando datos:", e); }
+}
 
 function validarAcceso() {
-    const u = document.getElementById('user').value.trim();
-    const p = document.getElementById('pass').value.trim();
-    if (db_usuarios.find(acc => acc.user === u && acc.pass === p)) {
+    const uInput = document.getElementById('user').value.trim().toLowerCase();
+    const pInput = document.getElementById('pass').value.trim();
+    
+    const encontrado = db_usuarios.find(acc => acc.user === uInput && acc.pass === pInput);
+    
+    if (encontrado) {
         if(document.getElementById("remember").checked){
-            localStorage.setItem("tamarindo_user", u); localStorage.setItem("tamarindo_pass", p);
+            localStorage.setItem("tamarindo_user", uInput);
+            localStorage.setItem("tamarindo_pass", pInput);
+        } else {
+            localStorage.removeItem("tamarindo_user"); localStorage.removeItem("tamarindo_pass");
         }
-        usuarioActivo = u; document.getElementById('login-overlay').style.display = 'none'; 
-        iniciarApp();
-    } else { document.getElementById('login-error').style.display = 'block'; }
+        usuarioActivo = uInput;
+        document.getElementById('login-overlay').style.display = 'none';
+        initAppUI();
+    } else {
+        document.getElementById('login-error').style.display = 'block';
+    }
 }
 
-function iniciarApp() {
-    fetch(URL_MENU).then(r=>r.text()).then(t=>{
-        menu = parseCSV(t).slice(1).map(f=>({ cat: f[0], nombre: f[1], precio: parseInt(f[3]?.replace(/[^0-9]/g, '')) || 0, img: f[4]?.trim() })).filter(m => m.nombre);
-        init();
-    });
-}
-
-function init(){
+// --- APP UI ---
+function initAppUI(){
     document.getElementById("displayNumMesas").textContent = localStorage.getItem("tamarindo_mesas") || 8;
     document.getElementById("configWa").value = localStorage.getItem("tamarindo_wa") || "";
     document.getElementById("configPrecioDomi").value = localStorage.getItem("tamarindo_precio_domi") || 0;
     crearMesas(); renderComensales();
 }
 
-// --- FUNCIONES CORE ---
 function parseCSV(t) {
     const r=[], row=[]; let c='', q=false;
     for(let ch of t){
@@ -241,55 +247,39 @@ function parseCSV(t) {
 
 function registrarVentaDB(total) {
     const mesaActiva = document.querySelector("#mesas .active")?.textContent || "N/A";
-    const listaProductos = [];
-    Object.values(pedidosPorPersona).forEach(arr => arr.forEach(p => listaProductos.push(p.nombre)));
-
+    const lista = [];
+    Object.values(pedidosPorPersona).forEach(arr => arr.forEach(p => lista.push(p.nombre)));
     db.ventas.add({
         fecha: new Date().toLocaleString(),
         atendido: usuarioActivo.toUpperCase(),
         servicio: tipoServicio,
         mesa: tipoServicio === 'domicilio' ? 'DOMI' : mesaActiva,
-        productos: listaProductos.join(" | "),
+        productos: lista.join(" | "),
         total: total
     });
 }
 
 async function exportarVentasExcel() {
     const ventas = await db.ventas.toArray();
-    if(ventas.length === 0) return alert("No hay ventas registradas.");
-    
+    if(!ventas.length) return alert("No hay datos.");
     let csv = "\uFEFFID,FECHA,ATENDIDO,SERVICIO,MESA,PRODUCTOS,TOTAL\n";
-    ventas.forEach(v => {
-        csv += `${v.id},${v.fecha},${v.atendido},${v.servicio},${v.mesa},"${v.productos}",${v.total}\n`;
-    });
-
+    ventas.forEach(v => { csv += `${v.id},${v.fecha},${v.atendido},${v.servicio},${v.mesa},"${v.productos}",${v.total}\n`; });
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const link = document.createElement("a");
     link.href = URL.createObjectURL(blob);
-    link.download = `Reporte_Esmeralda_${new Date().toLocaleDateString()}.csv`;
+    link.download = `Ventas_Esmeralda_${new Date().toLocaleDateString()}.csv`;
     link.click();
 }
 
-function borrarBaseDatos() {
-    if(confirm("¿Seguro que quieres borrar TODO el historial de ventas?")) {
-        db.ventas.clear();
-        alert("Historial borrado.");
-    }
-}
+function borrarBaseDatos() { if(confirm("¿Borrar historial?")) db.ventas.clear(); }
 
-// --- INTERFAZ ---
-function toggleConfig() { document.getElementById('panelConfig').classList.toggle('hidden'); }
-function saveConfig() { 
-    localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); 
-    localStorage.setItem("tamarindo_precio_domi", document.getElementById("configPrecioDomi").value);
-}
-
-function setServicio(tipo) {
-    tipoServicio = tipo;
-    document.getElementById('btnLocal').classList.toggle('active', tipo === 'local');
-    document.getElementById('btnDomi').classList.toggle('active', tipo === 'domicilio');
-    document.getElementById('formDomicilio').classList.toggle('hidden', tipo === 'local');
-    document.getElementById('sectionMesas').classList.toggle('hidden', tipo === 'domicilio');
+// --- LOGICA DE PEDIDOS ---
+function setServicio(t) {
+    tipoServicio = t;
+    document.getElementById('btnLocal').classList.toggle('active', t === 'local');
+    document.getElementById('btnDomi').classList.toggle('active', t === 'domicilio');
+    document.getElementById('formDomicilio').classList.toggle('hidden', t === 'local');
+    document.getElementById('sectionMesas').classList.toggle('hidden', t === 'domicilio');
     calcularTotal();
 }
 
@@ -298,18 +288,15 @@ function crearMesas(){
     cont.innerHTML = "";
     for(let i=1; i<=n; i++){
         let b=document.createElement("button"); b.className="btn"; b.textContent=i;
-        b.onclick=()=>{
-            document.querySelectorAll("#mesas .btn").forEach(x=>x.classList.remove("active"));
-            b.classList.add("active"); calcularTotal();
-        };
+        b.onclick=()=>{ document.querySelectorAll("#mesas .btn").forEach(x=>x.classList.remove("active")); b.classList.add("active"); calcularTotal(); };
         cont.appendChild(b);
     }
 }
 
-function ajustarMesas(cambio) {
-    let nuevo = Math.max(1, parseInt(document.getElementById("displayNumMesas").textContent) + cambio);
-    document.getElementById("displayNumMesas").textContent = nuevo;
-    localStorage.setItem("tamarindo_mesas", nuevo); crearMesas();
+function ajustarMesas(c) {
+    let n = Math.max(1, parseInt(document.getElementById("displayNumMesas").textContent) + c);
+    document.getElementById("displayNumMesas").textContent = n;
+    localStorage.setItem("tamarindo_mesas", n); crearMesas();
 }
 
 function cambiarComensales(n){
@@ -331,19 +318,16 @@ function renderComensales(){
 }
 
 function setCat(idx, cat, btn) {
-    const parent = document.getElementById(`cats-${idx}`);
-    parent.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
+    btn.parentElement.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
     btn.classList.add('active'); renderChips(idx, cat);
 }
 
 function renderChips(idx, cat){
-    document.getElementById(`chips-${idx}`).innerHTML = menu.filter(m => m.cat === cat).map(p => {
-        const foto = p.img || IMG_DEFAULT;
-        return `<div class="chip" onclick="agregarPlato(${idx}, '${p.nombre}')">
-                    <img src="${foto}">
-                    <div class="chip-info"><b>${p.nombre}</b><span>$${p.precio.toLocaleString()}</span></div>
-                </div>`;
-    }).join("");
+    document.getElementById(`chips-${idx}`).innerHTML = menu.filter(m => m.cat === cat).map(p => `
+        <div class="chip" onclick="agregarPlato(${idx}, '${p.nombre}')">
+            <img src="${p.img || 'https://via.placeholder.com/100'}">
+            <div class="chip-info"><b>${p.nombre}</b><span>$${p.precio.toLocaleString()}</span></div>
+        </div>`).join("");
 }
 
 function agregarPlato(idx, n){
@@ -354,15 +338,12 @@ function agregarPlato(idx, n){
 
 function actualizarResumenPersona(idx){
     const cont = document.getElementById(`resumen-${idx}`), items = pedidosPorPersona[idx] || [];
-    const agrupado = items.reduce((acc, curr) => { 
-        if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; 
-        acc[curr.nombre].cant += 1; return acc; 
-    }, {});
+    const agrupado = items.reduce((acc, curr) => { if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; acc[curr.nombre].cant += 1; return acc; }, {});
     cont.innerHTML = Object.values(agrupado).map((p) => `
         <div class="item-pedido">
             <div style="flex:1;"><b>${p.nombre}</b><br><small style="color:var(--accent)">Cant: ${p.cant}</small></div>
             <b style="color:var(--accent);">$${(p.precio * p.cant).toLocaleString()}</b>
-            <button class="del-btn" style="margin-left:10px;" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button>
+            <button class="del-btn" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button>
         </div>`).join("");
 }
 
@@ -374,9 +355,7 @@ function quitarPlato(idx, nombre){
 
 function calcularTotal(){
     let t = 0, count = 0;
-    Object.values(pedidosPorPersona).forEach(pArr => {
-        t += pArr.reduce((sum, p) => sum + p.precio, 0); count += pArr.length;
-    });
+    Object.values(pedidosPorPersona).forEach(arr => { t += arr.reduce((s, p) => s + p.precio, 0); count += arr.length; });
     if(tipoServicio === 'domicilio') t += parseInt(document.getElementById("configPrecioDomi").value) || 0;
     document.getElementById("total-val-fixed").textContent = `$${t.toLocaleString()}`;
     document.getElementById("badge-items").textContent = `${count} Platos`;
@@ -386,96 +365,72 @@ function calcularTotal(){
 }
 
 function nuevoPedido(){
-    if(!confirm("¿Borrar pedido actual?")) return;
+    if(!confirm("¿Limpiar todo?")) return;
     numComensales = 1; pedidosPorPersona = {};
     document.getElementById("cantComensales").textContent = 1;
-    document.querySelectorAll("input, textarea").forEach(i => { if(!i.id.startsWith("config")) i.value = ""; });
+    document.querySelectorAll("input:not([id^='config']), textarea").forEach(i => i.value = "");
     document.querySelectorAll("#mesas .btn").forEach(x => x.classList.remove("active"));
     setServicio('local'); renderComensales();
 }
 
-function toggleFullScreen() {
-    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
-    else document.exitFullscreen();
-}
-
 // --- SALIDA ---
 function wa(){
-    const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", total = calcularTotal(), targetNum = document.getElementById("configWa").value;
-    if(total === 0) return alert("Pedido vacío");
-    registrarVentaDB(total); // Guarda en SQL local
-    let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n👤 *Atendido:* ${usuarioActivo.toUpperCase()}\n`;
-    if(tipoServicio === 'domicilio'){
-        msg += `🛵 *DOMICILIO*\n👤 *Cli:* ${document.getElementById('domiNombre').value}\n📍 *Dir:* ${document.getElementById('domiDir').value}\n`;
-    } else { msg += `📍 *Mesa:* ${mesa}\n`; }
+    const total = calcularTotal(), target = document.getElementById("configWa").value;
+    if(!total) return alert("Pedido vacío");
+    registrarVentaDB(total);
+    let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n`;
+    msg += tipoServicio==='domicilio' ? `🛵 *DOMI:* ${document.getElementById('domiNombre').value}\n📍 *DIR:* ${document.getElementById('domiDir').value}\n` : `📍 *MESA:* ${document.querySelector("#mesas .active")?.textContent}\n`;
     msg += `--------------------------\n`;
     Object.keys(pedidosPorPersona).forEach(idx => {
-        if(pedidosPorPersona[idx].length > 0){
+        if(pedidosPorPersona[idx].length){
             msg += `👤 *Pedido ${idx}:*\n`;
-            const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; return acc; }, {});
-            for (const [nombre, cant] of Object.entries(agrupado)) { msg += ` - ${cant}x ${nombre}\n`; }
+            const agr = pedidosPorPersona[idx].reduce((a,c)=>{ a[c.nombre]=(a[c.nombre]||0)+1; return a;},{});
+            for(const [n,c] of Object.entries(agr)) msg += ` - ${c}x ${n}\n`;
         }
     });
     msg += `--------------------------\n💰 *TOTAL: $${total.toLocaleString()}*`;
-    window.open(`https://wa.me/${targetNum}?text=${encodeURIComponent(msg)}`);
+    window.open(`https://wa.me/${target}?text=${encodeURIComponent(msg)}`);
 }
 
 function imprimir() {
-    const mesa = document.querySelector("#mesas .active")?.textContent || "N/A";
-    const totalVal = calcularTotal();
-    const configPrecioDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
-    if (totalVal === 0) return alert("No hay productos");
-
-    registrarVentaDB(totalVal); // Guarda en SQL local
-
-    const fecha = new Date().toLocaleString('es-CO', { hour12: true });
+    const total = calcularTotal(); if(!total) return alert("Vacío");
+    registrarVentaDB(total);
+    const fecha = new Date().toLocaleString();
     const esDomi = tipoServicio === 'domicilio';
-    
-    let detalleProductos = "";
+    let det = "";
     Object.keys(pedidosPorPersona).forEach(idx => {
-        if (pedidosPorPersona[idx].length > 0) {
-            const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { 
-                acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; 
-                acc[curr.nombre + "_precio"] = curr.precio; return acc; 
-            }, {});
-            detalleProductos += `<div style="border-bottom:1px dashed #ccc; padding: 5px 0;"><strong>PEDIDO ${idx}</strong><br>`;
-            for (const [nombre, cant] of Object.entries(agrupado)) {
-                if (!nombre.endsWith("_precio")) {
-                    const subtotal = cant * agrupado[nombre + "_precio"];
-                    detalleProductos += `${cant}x ${nombre.substring(0,18)} <span style="float:right">$${subtotal.toLocaleString()}</span><br>`;
-                }
-            }
-            detalleProductos += `</div>`;
+        if (pedidosPorPersona[idx].length) {
+            const agr = pedidosPorPersona[idx].reduce((a,c)=>{ a[c.nombre]=(a[c.nombre]||0)+1; a[c.nombre+'_p']=c.precio; return a;},{});
+            det += `<div style="border-bottom:1px dashed #ccc; padding:5px 0;"><b>PEDIDO ${idx}</b><br>`;
+            for(const [n,c] of Object.entries(agr)) if(!n.endsWith('_p')) det += `${c}x ${n.substring(0,18)} <span style="float:right">$${(c*agr[n+'_p']).toLocaleString()}</span><br>`;
+            det += `</div>`;
         }
     });
 
-    const infoCliente = esDomi ? `
-        <div style="border:1px solid #000; padding:5px; margin:5px 0;">
-            <b>DOMICILIO</b><br>
-            Cli: ${document.getElementById('domiNombre').value || 'N/A'}<br>
-            Tel: ${document.getElementById('domiTel').value || 'N/A'}<br>
-            Dir: ${document.getElementById('domiDir').value || 'N/A'}
-        </div>` : `<p><b>UBICACIÓN: MESA ${mesa}</b></p>`;
+    const info = esDomi ? `<b>DOMICILIO</b><br>Cli: ${document.getElementById('domiNombre').value}<br>Dir: ${document.getElementById('domiDir').value}` : `<b>MESA: ${document.querySelector("#mesas .active")?.textContent}</b>`;
 
-    const crearCuerpoTicket = (titulo) => `
-        <div style="width: 180px; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.2; margin-bottom: 40px; color: #000;">
-            <center><strong style="font-size: 13px;">ASADERO LA ESMERALDA</strong><br><span>${titulo}</span><br>---</center>
-            <p style="font-size: 9px;">Fecha: ${fecha}<br>Atendido: ${usuarioActivo.toUpperCase()}</p>
-            ${infoCliente}
-            <span>---------------------------</span>
-            <div>${detalleProductos}</div>
-            ${esDomi ? `<div style="text-align:right;">Envío: $${configPrecioDomi.toLocaleString()}</div>` : ''}
-            <div style="text-align:right; font-size: 13px; margin-top:5px;"><strong>TOTAL: $${totalVal.toLocaleString()}</strong></div>
-            <center><br>¡Gracias por su compra!<br>---</center>
-        </div>`;
+    const ticket = (t) => `<div style="width:180px; font-family:monospace; font-size:11px; margin-bottom:40px;">
+        <center><b>ASADERO LA ESMERALDA</b><br>${t}<br>---</center>
+        ${info}<br>Atendido: ${usuarioActivo}<br>---<br>${det}
+        ${esDomi?`<div style="text-align:right;">Envío: $${document.getElementById('configPrecioDomi').value}</div>`:''}
+        <div style="text-align:right; font-size:13px;"><b>TOTAL: $${total.toLocaleString()}</b></div>
+        <center><br>¡Gracias!</center></div>`;
 
-    let contenidoFinal = `<html><body style="margin:0; padding:0;">
-        ${crearCuerpoTicket("*** COPIA CAJA ***")}
-        <div style="page-break-after: always;"></div>
-        ${crearCuerpoTicket("*** COPIA COCINA ***")}
-    `;
+    let final = `<html><body>${ticket("*** CAJA ***")}<div style="page-break-after:always;"></div>${ticket("*** COCINA ***")}`;
+    if(esDomi) final += `<div style="page-break-after:always;"></div>${ticket("*** DOMICILIO ***")}`;
+    final += `</body></html>`;
 
-    if (esDomi) {
-        contenidoFinal += `
-            <div style="page-break-after: always;"></div>
-            ${crear
+    const f = document.getElementById('printFrame');
+    f.contentWindow.document.open(); f.contentWindow.document.write(final); f.contentWindow.document.close();
+    setTimeout(()=>f.contentWindow.print(), 500);
+}
+
+function toggleConfig() { document.getElementById('panelConfig').classList.toggle('hidden'); }
+function saveConfig() { localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); localStorage.setItem("tamarindo_precio_domi", document.getElementById("configPrecioDomi").value); }
+function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
+
+// Cargar todo al inicio
+cargarDatosIniciales();
+</script>
+</body>
+</html>
