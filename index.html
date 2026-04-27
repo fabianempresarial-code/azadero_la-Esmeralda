@@ -191,7 +191,6 @@ const IMG_DEFAULT = "https://via.placeholder.com/150?text=COMIDA";
 
 let db_usuarios = [], menu = [], numComensales = 1, pedidosPorPersona = {}, tipoServicio = 'local', usuarioActivo = "";
 
-// --- UTILIDADES ---
 function parseCSV(t) {
     const r=[], row=[]; let c='', q=false;
     if(!t) return r;
@@ -213,7 +212,6 @@ function toggleFullScreen() {
     }
 }
 
-// --- LOGICA DE ACCESO ---
 window.onload = () => {
     const savedUser = localStorage.getItem("tamarindo_user");
     const savedPass = localStorage.getItem("tamarindo_pass");
@@ -260,7 +258,6 @@ function init(){
     crearMesas(); renderComensales();
 }
 
-// --- GESTIÓN DE INTERFAZ ---
 function toggleConfig() { document.getElementById('panelConfig').classList.toggle('hidden'); }
 function saveConfig() { 
     localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); 
@@ -314,7 +311,6 @@ function crearMesas(){
     }
 }
 
-// --- GESTIÓN DE PEDIDOS ---
 function cambiarComensales(n){
     numComensales = Math.max(1, numComensales + n);
     document.getElementById("cantComensales").textContent = numComensales;
@@ -400,7 +396,6 @@ function nuevoPedido(){
     setServicio('local'); renderComensales();
 }
 
-// --- SALIDA: WHATSAPP Y TICKET ---
 function wa(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", total = calcularTotal(), targetNum = document.getElementById("configWa").value;
     if(total === 0) return alert("Pedido vacío");
@@ -476,13 +471,21 @@ function imprimir() {
             <center><br><span>¡Gracias por su compra!</span><br><span>---------------------------</span></center>
         </div>`;
 
+    // LÓGICA DE COPIAS: Caja y Cocina siempre. Domicilio solo si aplica.
     let contenidoFinal = `<html><body style="margin:0; padding:0;">
         ${crearCuerpoTicket("*** COPIA CAJA ***")}
         <div style="page-break-after: always; height:1px;"></div>
         ${crearCuerpoTicket("*** COPIA COCINA ***")}
-        <div style="page-break-after: always; height:1px;"></div>
-        ${crearCuerpoTicket("*** COPIA DOMICILIO ***")}
-    </body></html>`;
+    `;
+
+    if (esDomi) {
+        contenidoFinal += `
+            <div style="page-break-after: always; height:1px;"></div>
+            ${crearCuerpoTicket("*** COPIA DOMICILIO ***")}
+        `;
+    }
+
+    contenidoFinal += `</body></html>`;
 
     const f = document.getElementById('printFrame');
     f.contentWindow.document.open();
