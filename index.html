@@ -72,7 +72,7 @@
         .footer-top { display: flex; justify-content: space-between; align-items: center; }
         .footer-total { font-size: 1.6rem; font-weight: 900; color: #fff; margin: 0; }
         .footer-actions { display: flex; gap: 8px; }
-        .footer-actions button { flex: 1; height: 42px; border-radius: 12px; border: none; font-weight: bold; color: white; cursor: pointer; }
+        .footer-actions button { flex: 1; height: 42px; border-radius: 12px; border: none; font-weight: bold; color: white; cursor: pointer; font-size: 14px; }
 
         label{display:block; margin-bottom:8px; font-size:11px; color:var(--accent); text-transform:uppercase; font-weight:800; letter-spacing:1px;}
         .del-btn { background:var(--accent2); color:white; border:none; border-radius:50%; width:28px; height:28px; cursor:pointer; font-weight:bold; }
@@ -89,7 +89,7 @@
             <input type="checkbox" id="remember"> Recordar mis datos
         </label>
         <button id="btnEntrar" class="btn" style="width:100%; background:var(--accent); color:black; margin-top:15px;" onclick="validarAcceso()">ENTRAR</button>
-        <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Datos incorrectos o cargando...</p>
+        <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Error de acceso o conexión.</p>
     </div>
 </div>
 
@@ -102,11 +102,11 @@
 <div class="main-wrapper">
     <div class="sidebar">
         <div id="panelConfig" class="card hidden">
-            <label>⚙️ Control de Ventas</label>
-            <button class="btn" style="background:#22c55e; color:white; width:100%; margin-bottom:10px;" onclick="exportarVentasExcel()">📊 DESCARGAR EXCEL</button>
+            <label>⚙️ Control y Reportes</label>
+            <button class="btn" style="background:#22c55e; color:white; width:100%; margin-bottom:10px;" onclick="exportarVentasExcel()">📊 DESCARGAR EXCEL (OK)</button>
             <button class="btn" style="background:var(--accent2); color:white; width:100%; margin-bottom:20px;" onclick="borrarBaseDatos()">🗑️ BORRAR HISTORIAL</button>
             
-            <label>Configuración General</label>
+            <label>Configuración WhatsApp</label>
             <input type="tel" id="configWa" class="input-field" placeholder="WhatsApp Destino" onchange="saveConfig()">
             <input type="number" id="configPrecioDomi" class="input-field" placeholder="Precio Domicilio" onchange="saveConfig(); calcularTotal();">
             
@@ -120,15 +120,15 @@
         </div>
 
         <div class="card">
-            <label>🛵 Servicio</label>
+            <label>🛵 Tipo de Servicio</label>
             <div class="grid" style="grid-template-columns: 1fr 1fr;">
                 <button class="btn active" id="btnLocal" onclick="setServicio('local')">LOCAL</button>
                 <button class="btn" id="btnDomi" onclick="setServicio('domicilio')">DOMICILIO</button>
             </div>
             <div id="formDomicilio" class="domi-form hidden" style="margin-top:15px;">
-                <input type="text" id="domiNombre" class="input-field" placeholder="Cliente">
+                <input type="text" id="domiNombre" class="input-field" placeholder="Nombre Cliente">
                 <input type="tel" id="domiTel" class="input-field" placeholder="Teléfono">
-                <input type="text" id="domiDir" class="input-field" placeholder="Dirección">
+                <input type="text" id="domiDir" class="input-field" placeholder="Dirección Entrega">
             </div>
             <div id="sectionMesas" style="margin-top:15px;">
                 <label>📍 Seleccionar Mesa</label>
@@ -139,7 +139,7 @@
 
     <div class="content">
         <div class="card">
-            <label>👤 N° Pedidos Separados</label>
+            <label>👤 N° Cuentas Separadas</label>
             <div class="grid" style="grid-template-columns: 1fr 2fr 1fr; max-width: 250px;">
                 <button class="btn" onclick="cambiarComensales(-1)">➖</button>
                 <span id="cantComensales" style="font-size:1.6rem; font-weight:bold; text-align: center;">1</span>
@@ -168,18 +168,18 @@
 <iframe id="printFrame" style="display:none;"></iframe>
 
 <script>
-// --- DB LOCAL ---
+// --- DB LOCAL (Dexie) ---
 const db = new Dexie("EsmeraldaDB");
-db.version(1).stores({ ventas: '++id, fecha, atendido, servicio, total, mesa' });
+db.version(1).stores({ ventas: '++id, fecha, atendido, servicio, total, mesa, productos' });
 
-// --- CONFIG ---
+// --- CONFIGURACIÓN ---
 const URL_USUARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPjmET3KGocH1nu-BSY_rbDB5FTrIpRNL5h_jFaCQq5h3sOoQnkb3aixwq5WQL-fQ8FLe3tdtAiZN/pub?output=csv"; 
 const URL_MENU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU3FT66_0vVAygWPIDfjIAhGwnKGWeBhDB3cVrzkMZQRP6M0ONz2_xwy-u8Q7muAoP6oa4QFxXc7xb/pub?output=csv";
 
 let db_usuarios = [], menu = [], numComensales = 1, pedidosPorPersona = {}, tipoServicio = 'local', usuarioActivo = "";
 
-// --- LOGIN LOGIC CORREGIDA ---
-async function cargarDatosIniciales() {
+// --- CARGA INICIAL Y LOGIN ---
+async function cargarDatos() {
     try {
         const resU = await fetch(URL_USUARIOS);
         const txtU = await resU.text();
@@ -194,7 +194,7 @@ async function cargarDatosIniciales() {
             cat: f[0], nombre: f[1], precio: parseInt(f[3]?.replace(/[^0-9]/g, '')) || 0, img: f[4]?.trim() 
         })).filter(m => m.nombre);
 
-        // Auto-login si recordó datos
+        // Recordar sesión
         const sU = localStorage.getItem("tamarindo_user");
         const sP = localStorage.getItem("tamarindo_pass");
         if(sU && sP) {
@@ -202,38 +202,36 @@ async function cargarDatosIniciales() {
             document.getElementById("pass").value = sP;
             document.getElementById("remember").checked = true;
         }
-    } catch (e) { console.error("Error cargando datos:", e); }
+    } catch (e) { console.error("Error cargando Google Sheets:", e); }
 }
 
 function validarAcceso() {
-    const uInput = document.getElementById('user').value.trim().toLowerCase();
-    const pInput = document.getElementById('pass').value.trim();
-    
-    const encontrado = db_usuarios.find(acc => acc.user === uInput && acc.pass === pInput);
+    const u = document.getElementById('user').value.trim().toLowerCase();
+    const p = document.getElementById('pass').value.trim();
+    const encontrado = db_usuarios.find(acc => acc.user === u && acc.pass === p);
     
     if (encontrado) {
         if(document.getElementById("remember").checked){
-            localStorage.setItem("tamarindo_user", uInput);
-            localStorage.setItem("tamarindo_pass", pInput);
+            localStorage.setItem("tamarindo_user", u); localStorage.setItem("tamarindo_pass", p);
         } else {
             localStorage.removeItem("tamarindo_user"); localStorage.removeItem("tamarindo_pass");
         }
-        usuarioActivo = uInput;
+        usuarioActivo = u;
         document.getElementById('login-overlay').style.display = 'none';
-        initAppUI();
+        iniciarUI();
     } else {
         document.getElementById('login-error').style.display = 'block';
     }
 }
 
-// --- APP UI ---
-function initAppUI(){
+function iniciarUI(){
     document.getElementById("displayNumMesas").textContent = localStorage.getItem("tamarindo_mesas") || 8;
     document.getElementById("configWa").value = localStorage.getItem("tamarindo_wa") || "";
     document.getElementById("configPrecioDomi").value = localStorage.getItem("tamarindo_precio_domi") || 0;
     crearMesas(); renderComensales();
 }
 
+// --- UTILIDADES CSV ---
 function parseCSV(t) {
     const r=[], row=[]; let c='', q=false;
     for(let ch of t){
@@ -245,15 +243,17 @@ function parseCSV(t) {
     row.push(c); r.push(row); return r;
 }
 
-function registrarVentaDB(total) {
-    const mesaActiva = document.querySelector("#mesas .active")?.textContent || "N/A";
+// --- CONTROL DE VENTAS (EXCEL COMPATIBLE) ---
+async function registrarVentaDB(total) {
+    const mesa = document.querySelector("#mesas .active")?.textContent || "N/A";
     const lista = [];
     Object.values(pedidosPorPersona).forEach(arr => arr.forEach(p => lista.push(p.nombre)));
-    db.ventas.add({
+    
+    await db.ventas.add({
         fecha: new Date().toLocaleString(),
         atendido: usuarioActivo.toUpperCase(),
-        servicio: tipoServicio,
-        mesa: tipoServicio === 'domicilio' ? 'DOMI' : mesaActiva,
+        servicio: tipoServicio.toUpperCase(),
+        mesa: tipoServicio === 'domicilio' ? 'DOMI' : mesa,
         productos: lista.join(" | "),
         total: total
     });
@@ -261,19 +261,27 @@ function registrarVentaDB(total) {
 
 async function exportarVentasExcel() {
     const ventas = await db.ventas.toArray();
-    if(!ventas.length) return alert("No hay datos.");
-    let csv = "\uFEFFID,FECHA,ATENDIDO,SERVICIO,MESA,PRODUCTOS,TOTAL\n";
-    ventas.forEach(v => { csv += `${v.id},${v.fecha},${v.atendido},${v.servicio},${v.mesa},"${v.productos}",${v.total}\n`; });
-    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    if(!ventas.length) return alert("No hay ventas para exportar.");
+
+    let csv = "sep=,\n"; // Indica a Excel que el separador es la coma
+    csv += "ID,FECHA,ATENDIDO,SERVICIO,MESA,PRODUCTOS,TOTAL\n";
+    
+    ventas.forEach(v => {
+        const prodLimpios = v.productos.replace(/"/g, '""');
+        csv += `${v.id},${v.fecha},${v.atendido},${v.servicio},${v.mesa},"${prodLimpios}",${v.total}\n`;
+    });
+
+    const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Ventas_Esmeralda_${new Date().toLocaleDateString()}.csv`;
+    link.href = url;
+    link.download = `Ventas_Esmeralda_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
 }
 
-function borrarBaseDatos() { if(confirm("¿Borrar historial?")) db.ventas.clear(); }
+function borrarBaseDatos() { if(confirm("¿Seguro que desea borrar todo el historial?")) db.ventas.clear(); }
 
-// --- LOGICA DE PEDIDOS ---
+// --- LÓGICA DE INTERFAZ ---
 function setServicio(t) {
     tipoServicio = t;
     document.getElementById('btnLocal').classList.toggle('active', t === 'local');
@@ -338,8 +346,8 @@ function agregarPlato(idx, n){
 
 function actualizarResumenPersona(idx){
     const cont = document.getElementById(`resumen-${idx}`), items = pedidosPorPersona[idx] || [];
-    const agrupado = items.reduce((acc, curr) => { if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; acc[curr.nombre].cant += 1; return acc; }, {});
-    cont.innerHTML = Object.values(agrupado).map((p) => `
+    const agr = items.reduce((acc, curr) => { if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; acc[curr.nombre].cant += 1; return acc; }, {});
+    cont.innerHTML = Object.values(agr).map((p) => `
         <div class="item-pedido">
             <div style="flex:1;"><b>${p.nombre}</b><br><small style="color:var(--accent)">Cant: ${p.cant}</small></div>
             <b style="color:var(--accent);">$${(p.precio * p.cant).toLocaleString()}</b>
@@ -365,7 +373,7 @@ function calcularTotal(){
 }
 
 function nuevoPedido(){
-    if(!confirm("¿Limpiar todo?")) return;
+    if(!confirm("¿Limpiar pedido actual?")) return;
     numComensales = 1; pedidosPorPersona = {};
     document.getElementById("cantComensales").textContent = 1;
     document.querySelectorAll("input:not([id^='config']), textarea").forEach(i => i.value = "");
@@ -373,7 +381,7 @@ function nuevoPedido(){
     setServicio('local'); renderComensales();
 }
 
-// --- SALIDA ---
+// --- IMPRESIÓN Y SALIDA ---
 function wa(){
     const total = calcularTotal(), target = document.getElementById("configWa").value;
     if(!total) return alert("Pedido vacío");
@@ -393,7 +401,7 @@ function wa(){
 }
 
 function imprimir() {
-    const total = calcularTotal(); if(!total) return alert("Vacío");
+    const total = calcularTotal(); if(!total) return alert("Pedido vacío");
     registrarVentaDB(total);
     const fecha = new Date().toLocaleString();
     const esDomi = tipoServicio === 'domicilio';
@@ -409,14 +417,14 @@ function imprimir() {
 
     const info = esDomi ? `<b>DOMICILIO</b><br>Cli: ${document.getElementById('domiNombre').value}<br>Dir: ${document.getElementById('domiDir').value}` : `<b>MESA: ${document.querySelector("#mesas .active")?.textContent}</b>`;
 
-    const ticket = (t) => `<div style="width:180px; font-family:monospace; font-size:11px; margin-bottom:40px;">
+    const ticket = (t) => `<div style="width:180px; font-family:monospace; font-size:10px; margin-bottom:50px;">
         <center><b>ASADERO LA ESMERALDA</b><br>${t}<br>---</center>
-        ${info}<br>Atendido: ${usuarioActivo}<br>---<br>${det}
+        ${info}<br>Atendido: ${usuarioActivo.toUpperCase()}<br>---<br>${det}
         ${esDomi?`<div style="text-align:right;">Envío: $${document.getElementById('configPrecioDomi').value}</div>`:''}
-        <div style="text-align:right; font-size:13px;"><b>TOTAL: $${total.toLocaleString()}</b></div>
+        <div style="text-align:right; font-size:12px;"><b>TOTAL: $${total.toLocaleString()}</b></div>
         <center><br>¡Gracias!</center></div>`;
 
-    let final = `<html><body>${ticket("*** CAJA ***")}<div style="page-break-after:always;"></div>${ticket("*** COCINA ***")}`;
+    let final = `<html><body style="margin:0;padding:0;">${ticket("*** CAJA ***")}<div style="page-break-after:always;"></div>${ticket("*** COCINA ***")}`;
     if(esDomi) final += `<div style="page-break-after:always;"></div>${ticket("*** DOMICILIO ***")}`;
     final += `</body></html>`;
 
@@ -429,8 +437,8 @@ function toggleConfig() { document.getElementById('panelConfig').classList.toggl
 function saveConfig() { localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); localStorage.setItem("tamarindo_precio_domi", document.getElementById("configPrecioDomi").value); }
 function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
 
-// Cargar todo al inicio
-cargarDatosIniciales();
+// --- CARGA ---
+cargarDatos();
 </script>
 </body>
 </html>
