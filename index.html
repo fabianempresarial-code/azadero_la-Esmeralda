@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Asadero La Esmeralda - Pro Dashboard</title>
+    <script src="https://unpkg.com/dexie/dist/dexie.js"></script>
     <style>
         :root{--bg:#0f172a;--card:#1e293b;--accent:#f59e0b;--accent2:#ef4444;--text:#ffffff;--soft:#334155;}
         body{margin:0;font-family:system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;overflow-x:hidden;}
@@ -56,14 +57,7 @@
         .item-pedido {
             display:flex; justify-content:space-between; align-items:center;
             background:rgba(0,0,0,0.4); padding:12px; border-radius:14px; margin-bottom:10px; gap:10px;
-            animation: slideIn 0.3s ease-out;
         }
-        @keyframes slideIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
-
-        .item-info span { font-weight:bold; color:white; display:block; }
-        .item-info small { color:var(--accent); }
-        .item-precio { font-weight:bold; color:var(--accent); font-size:16px; }
-        .del-btn { background:var(--accent2); color:white; border:none; border-radius:50%; width:30px; height:30px; cursor:pointer; font-weight:bold; }
 
         .compact-footer {
             position: fixed; bottom: 0; left: 0; right: 0;
@@ -73,7 +67,6 @@
             z-index: 1000;
             padding: 10px 15px;
             display: flex; flex-direction: column; gap: 8px;
-            box-shadow: 0 -5px 20px rgba(0,0,0,0.5);
         }
 
         .footer-top { display: flex; justify-content: space-between; align-items: center; }
@@ -89,12 +82,6 @@
         }
 
         label{display:block; margin-bottom:8px; font-size:13px; color:var(--accent); text-transform:uppercase; font-weight:800; letter-spacing:1px;}
-        
-        .remember-me {
-            display: flex; align-items: center; justify-content: center; gap: 10px;
-            margin-bottom: 15px; font-size: 14px; color: white; cursor: pointer;
-        }
-        .remember-me input { width: 18px; height: 18px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -104,10 +91,10 @@
         <h2 style="color:var(--accent); margin-top:0;">🔥 ACCESO</h2>
         <input type="text" id="user" class="input-field" placeholder="Usuario">
         <input type="password" id="pass" class="input-field" placeholder="Contraseña">
-        <label class="remember-me">
+        <label style="display:flex; align-items:center; justify-content:center; gap:8px; color:white; text-transform: none;">
             <input type="checkbox" id="remember"> Recordar mis datos
         </label>
-        <button class="btn" style="width:100%; background:var(--accent); color:black;" onclick="validarAcceso()">ENTRAR</button>
+        <button class="btn" style="width:100%; background:var(--accent); color:black; margin-top:15px;" onclick="validarAcceso()">ENTRAR</button>
         <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Datos incorrectos</p>
     </div>
 </div>
@@ -124,6 +111,10 @@
             <label>⚙️ Panel de Control</label>
             <input type="tel" id="configWa" class="input-field" placeholder="WhatsApp Destino" onchange="saveConfig()">
             <input type="number" id="configPrecioDomi" class="input-field" placeholder="Precio Domicilio" onchange="saveConfig(); calcularTotal();">
+            
+            <button class="btn" style="background:#22c55e; color:white; width:100%; margin-bottom:10px;" onclick="exportarVentasExcel()">📊 DESCARGAR EXCEL</button>
+            <button class="btn" style="background:var(--accent2); color:white; width:100%; margin-bottom:10px;" onclick="borrarBaseDatos()">🗑️ LIMPIAR TODO</button>
+            
             <label>Número de Mesas</label>
             <div class="grid" style="grid-template-columns: 1fr 2fr 1fr;">
                 <button class="btn" onclick="ajustarMesas(-1)">➖</button>
@@ -143,7 +134,7 @@
                 <input type="text" id="domiNombre" class="input-field" placeholder="Cliente">
                 <input type="tel" id="domiTel" class="input-field" placeholder="Teléfono">
                 <input type="text" id="domiDir" class="input-field" placeholder="Dirección">
-                <textarea id="domiObs" class="input-field" placeholder="Observaciones Domicilio..."></textarea>
+                <textarea id="domiObs" class="input-field" placeholder="Observaciones..."></textarea>
             </div>
             <div id="sectionMesas" style="margin-top:15px;">
                 <label>📍 Mesa</label>
@@ -184,38 +175,22 @@
 <iframe id="printFrame" style="display:none;"></iframe>
 
 <script>
-// --- CONFIGURACIÓN Y VARIABLES ---
+// --- CONFIGURACIÓN DE BASE DE DATOS LOCAL (DEXIE) ---
+const db = new Dexie("EsmeraldaDB");
+db.version(1).stores({ ventas: '++id, fecha, atendido, servicio, total, mesa' });
+
+// --- VARIABLES ---
 const URL_USUARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPjmET3KGocH1nu-BSY_rbDB5FTrIpRNL5h_jFaCQq5h3sOoQnkb3aixwq5WQL-fQ8FLe3tdtAiZN/pub?output=csv"; 
 const URL_MENU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU3FT66_0vVAygWPIDfjIAhGwnKGWeBhDB3cVrzkMZQRP6M0ONz2_xwy-u8Q7muAoP6oa4QFxXc7xb/pub?output=csv";
 const IMG_DEFAULT = "https://via.placeholder.com/150?text=COMIDA";
 
 let db_usuarios = [], menu = [], numComensales = 1, pedidosPorPersona = {}, tipoServicio = 'local', usuarioActivo = "";
 
-function parseCSV(t) {
-    const r=[], row=[]; let c='', q=false;
-    if(!t) return r;
-    for(let ch of t){
-        if(ch=='"') q=!q;
-        else if(ch==','&&!q){row.push(c);c=''}
-        else if(ch=='\n'&&!q){row.push(c);r.push([...row]);row.length=0;c=''}
-        else c+=ch;
-    }
-    row.push(c); r.push(row);
-    return r;
-}
-
-function toggleFullScreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => console.log(err));
-    } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-    }
-}
-
+// --- LOGIN Y CARGA ---
 window.onload = () => {
     const savedUser = localStorage.getItem("tamarindo_user");
     const savedPass = localStorage.getItem("tamarindo_pass");
-    if(savedUser && savedPass) {
+    if(savedUser) {
         document.getElementById("user").value = savedUser;
         document.getElementById("pass").value = savedPass;
         document.getElementById("remember").checked = true;
@@ -223,31 +198,25 @@ window.onload = () => {
 };
 
 fetch(URL_USUARIOS).then(r => r.text()).then(t => {
-    db_usuarios = parseCSV(t).slice(1).map(f => ({ user: f[0]?.trim() || "", pass: f[1]?.trim() || "" }));
+    db_usuarios = parseCSV(t).slice(1).map(f => ({ user: f[0]?.trim(), pass: f[1]?.trim() }));
 });
 
 function validarAcceso() {
     const u = document.getElementById('user').value.trim();
     const p = document.getElementById('pass').value.trim();
-    const remember = document.getElementById('remember').checked;
     if (db_usuarios.find(acc => acc.user === u && acc.pass === p)) {
-        if(remember) {
-            localStorage.setItem("tamarindo_user", u);
-            localStorage.setItem("tamarindo_pass", p);
+        if(document.getElementById("remember").checked){
+            localStorage.setItem("tamarindo_user", u); localStorage.setItem("tamarindo_pass", p);
         }
-        usuarioActivo = u; 
-        document.getElementById('login-overlay').style.display = 'none'; 
+        usuarioActivo = u; document.getElementById('login-overlay').style.display = 'none'; 
         iniciarApp();
-    } else { 
-        document.getElementById('login-error').style.display = 'block'; 
-    }
+    } else { document.getElementById('login-error').style.display = 'block'; }
 }
 
 function iniciarApp() {
     fetch(URL_MENU).then(r=>r.text()).then(t=>{
-        menu = parseCSV(t).slice(1).map(f=>({ cat: f[0], nombre: f[1], precio: parseInt(f[3]?.replace(/[^0-9]/g, '')) || 0, img: f[4]?.trim() || "" })).filter(m => m.nombre);
+        menu = parseCSV(t).slice(1).map(f=>({ cat: f[0], nombre: f[1], precio: parseInt(f[3]?.replace(/[^0-9]/g, '')) || 0, img: f[4]?.trim() })).filter(m => m.nombre);
         init();
-        detectarMesaPorURL();
     });
 }
 
@@ -258,28 +227,61 @@ function init(){
     crearMesas(); renderComensales();
 }
 
+// --- FUNCIONES CORE ---
+function parseCSV(t) {
+    const r=[], row=[]; let c='', q=false;
+    for(let ch of t){
+        if(ch=='"') q=!q;
+        else if(ch==','&&!q){row.push(c);c=''}
+        else if(ch=='\n'&&!q){row.push(c);r.push([...row]);row.length=0;c=''}
+        else c+=ch;
+    }
+    row.push(c); r.push(row); return r;
+}
+
+function registrarVentaDB(total) {
+    const mesaActiva = document.querySelector("#mesas .active")?.textContent || "N/A";
+    const listaProductos = [];
+    Object.values(pedidosPorPersona).forEach(arr => arr.forEach(p => listaProductos.push(p.nombre)));
+
+    db.ventas.add({
+        fecha: new Date().toLocaleString(),
+        atendido: usuarioActivo.toUpperCase(),
+        servicio: tipoServicio,
+        mesa: tipoServicio === 'domicilio' ? 'DOMI' : mesaActiva,
+        productos: listaProductos.join(" | "),
+        total: total
+    });
+}
+
+async function exportarVentasExcel() {
+    const ventas = await db.ventas.toArray();
+    if(ventas.length === 0) return alert("No hay ventas registradas.");
+    
+    let csv = "\uFEFFID,FECHA,ATENDIDO,SERVICIO,MESA,PRODUCTOS,TOTAL\n";
+    ventas.forEach(v => {
+        csv += `${v.id},${v.fecha},${v.atendido},${v.servicio},${v.mesa},"${v.productos}",${v.total}\n`;
+    });
+
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = `Reporte_Esmeralda_${new Date().toLocaleDateString()}.csv`;
+    link.click();
+}
+
+function borrarBaseDatos() {
+    if(confirm("¿Seguro que quieres borrar TODO el historial de ventas?")) {
+        db.ventas.clear();
+        alert("Historial borrado.");
+    }
+}
+
+// --- INTERFAZ ---
 function toggleConfig() { document.getElementById('panelConfig').classList.toggle('hidden'); }
 function saveConfig() { 
     localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); 
     localStorage.setItem("tamarindo_precio_domi", document.getElementById("configPrecioDomi").value);
-}
-
-function detectarMesaPorURL() {
-    const params = new URLSearchParams(window.location.search);
-    const mesaURL = params.get('mesa');
-    if (mesaURL) {
-        setTimeout(() => { seleccionarMesa(mesaURL); }, 500);
-    }
-}
-
-function seleccionarMesa(numero) {
-    const botones = document.querySelectorAll("#mesas .btn");
-    botones.forEach(b => {
-        if (b.textContent == numero) {
-            b.click();
-            b.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    });
 }
 
 function setServicio(tipo) {
@@ -291,12 +293,6 @@ function setServicio(tipo) {
     calcularTotal();
 }
 
-function ajustarMesas(cambio) {
-    let nuevo = Math.max(1, parseInt(document.getElementById("displayNumMesas").textContent) + cambio);
-    document.getElementById("displayNumMesas").textContent = nuevo;
-    localStorage.setItem("tamarindo_mesas", nuevo); crearMesas();
-}
-
 function crearMesas(){
     const cont = document.getElementById("mesas"), n = parseInt(document.getElementById("displayNumMesas").textContent);
     cont.innerHTML = "";
@@ -304,11 +300,16 @@ function crearMesas(){
         let b=document.createElement("button"); b.className="btn"; b.textContent=i;
         b.onclick=()=>{
             document.querySelectorAll("#mesas .btn").forEach(x=>x.classList.remove("active"));
-            b.classList.add("active");
-            calcularTotal();
+            b.classList.add("active"); calcularTotal();
         };
         cont.appendChild(b);
     }
+}
+
+function ajustarMesas(cambio) {
+    let nuevo = Math.max(1, parseInt(document.getElementById("displayNumMesas").textContent) + cambio);
+    document.getElementById("displayNumMesas").textContent = nuevo;
+    localStorage.setItem("tamarindo_mesas", nuevo); crearMesas();
 }
 
 function cambiarComensales(n){
@@ -337,7 +338,7 @@ function setCat(idx, cat, btn) {
 
 function renderChips(idx, cat){
     document.getElementById(`chips-${idx}`).innerHTML = menu.filter(m => m.cat === cat).map(p => {
-        const foto = (p.img && p.img.length > 5) ? p.img : IMG_DEFAULT;
+        const foto = p.img || IMG_DEFAULT;
         return `<div class="chip" onclick="agregarPlato(${idx}, '${p.nombre}')">
                     <img src="${foto}">
                     <div class="chip-info"><b>${p.nombre}</b><span>$${p.precio.toLocaleString()}</span></div>
@@ -348,22 +349,20 @@ function renderChips(idx, cat){
 function agregarPlato(idx, n){
     if(!pedidosPorPersona[idx]) pedidosPorPersona[idx] = [];
     pedidosPorPersona[idx].unshift(menu.find(m=>m.nombre === n));
-    actualizarResumenPersona(idx); 
-    calcularTotal();
+    actualizarResumenPersona(idx); calcularTotal();
 }
 
 function actualizarResumenPersona(idx){
     const cont = document.getElementById(`resumen-${idx}`), items = pedidosPorPersona[idx] || [];
     const agrupado = items.reduce((acc, curr) => { 
         if (!acc[curr.nombre]) acc[curr.nombre] = { ...curr, cant: 0 }; 
-        acc[curr.nombre].cant += 1; 
-        return acc; 
+        acc[curr.nombre].cant += 1; return acc; 
     }, {});
     cont.innerHTML = Object.values(agrupado).map((p) => `
         <div class="item-pedido">
-            <div class="item-info"><span>${p.nombre}</span><small>Cant: ${p.cant}</small></div>
-            <b class="item-precio">$${(p.precio * p.cant).toLocaleString()}</b>
-            <button class="del-btn" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button>
+            <div style="flex:1;"><b>${p.nombre}</b><br><small style="color:var(--accent)">Cant: ${p.cant}</small></div>
+            <b style="color:var(--accent);">$${(p.precio * p.cant).toLocaleString()}</b>
+            <button class="del-btn" style="margin-left:10px;" onclick="quitarPlato(${idx},'${p.nombre}')">✕</button>
         </div>`).join("");
 }
 
@@ -376,14 +375,13 @@ function quitarPlato(idx, nombre){
 function calcularTotal(){
     let t = 0, count = 0;
     Object.values(pedidosPorPersona).forEach(pArr => {
-        t += pArr.reduce((sum, p) => sum + p.precio, 0);
-        count += pArr.length;
+        t += pArr.reduce((sum, p) => sum + p.precio, 0); count += pArr.length;
     });
     if(tipoServicio === 'domicilio') t += parseInt(document.getElementById("configPrecioDomi").value) || 0;
     document.getElementById("total-val-fixed").textContent = `$${t.toLocaleString()}`;
     document.getElementById("badge-items").textContent = `${count} Platos`;
-    const mesaActiva = document.querySelector("#mesas .active")?.textContent || "N/A";
-    document.getElementById("label-mesa-domi").textContent = tipoServicio === 'domicilio' ? "🛵 DOMICILIO" : `📍 MESA: ${mesaActiva}`;
+    const mesa = document.querySelector("#mesas .active")?.textContent || "N/A";
+    document.getElementById("label-mesa-domi").textContent = tipoServicio === 'domicilio' ? "🛵 DOMICILIO" : `📍 MESA: ${mesa}`;
     return t;
 }
 
@@ -391,20 +389,25 @@ function nuevoPedido(){
     if(!confirm("¿Borrar pedido actual?")) return;
     numComensales = 1; pedidosPorPersona = {};
     document.getElementById("cantComensales").textContent = 1;
-    document.querySelectorAll("input, textarea").forEach(i => { if(i.id !== "configWa" && i.id !== "configPrecioDomi") i.value = ""; });
+    document.querySelectorAll("input, textarea").forEach(i => { if(!i.id.startsWith("config")) i.value = ""; });
     document.querySelectorAll("#mesas .btn").forEach(x => x.classList.remove("active"));
     setServicio('local'); renderComensales();
 }
 
+function toggleFullScreen() {
+    if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+    else document.exitFullscreen();
+}
+
+// --- SALIDA ---
 function wa(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", total = calcularTotal(), targetNum = document.getElementById("configWa").value;
     if(total === 0) return alert("Pedido vacío");
-    let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n👤 *Atendido por:* ${usuarioActivo.toUpperCase()}\n`;
+    registrarVentaDB(total); // Guarda en SQL local
+    let msg = `🔥 *ASADERO TAMARINDO*\n--------------------------\n👤 *Atendido:* ${usuarioActivo.toUpperCase()}\n`;
     if(tipoServicio === 'domicilio'){
         msg += `🛵 *DOMICILIO*\n👤 *Cli:* ${document.getElementById('domiNombre').value}\n📍 *Dir:* ${document.getElementById('domiDir').value}\n`;
-    } else { 
-        msg += `📍 *Mesa:* ${mesa}\n`; 
-    }
+    } else { msg += `📍 *Mesa:* ${mesa}\n`; }
     msg += `--------------------------\n`;
     Object.keys(pedidosPorPersona).forEach(idx => {
         if(pedidosPorPersona[idx].length > 0){
@@ -423,6 +426,8 @@ function imprimir() {
     const configPrecioDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
     if (totalVal === 0) return alert("No hay productos");
 
+    registrarVentaDB(totalVal); // Guarda en SQL local
+
     const fecha = new Date().toLocaleString('es-CO', { hour12: true });
     const esDomi = tipoServicio === 'domicilio';
     
@@ -431,12 +436,9 @@ function imprimir() {
         if (pedidosPorPersona[idx].length > 0) {
             const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { 
                 acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; 
-                acc[curr.nombre + "_precio"] = curr.precio;
-                return acc; 
+                acc[curr.nombre + "_precio"] = curr.precio; return acc; 
             }, {});
-            
-            detalleProductos += `<div style="border-bottom:1px dashed #ccc; padding: 5px 0;">`;
-            detalleProductos += `<strong>PEDIDO ${idx}</strong><br>`;
+            detalleProductos += `<div style="border-bottom:1px dashed #ccc; padding: 5px 0;"><strong>PEDIDO ${idx}</strong><br>`;
             for (const [nombre, cant] of Object.entries(agrupado)) {
                 if (!nombre.endsWith("_precio")) {
                     const subtotal = cant * agrupado[nombre + "_precio"];
@@ -456,43 +458,24 @@ function imprimir() {
         </div>` : `<p><b>UBICACIÓN: MESA ${mesa}</b></p>`;
 
     const crearCuerpoTicket = (titulo) => `
-        <div style="width: 180px; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.2; margin-bottom: 40px; color: #000;">
-            <center>
-                <strong style="font-size: 13px;">ASADERO LA ESMERALDA</strong><br>
-                <span>${titulo}</span><br>
-                <span>---------------------------</span>
-            </center>
-            <p style="font-size: 9px; margin: 5px 0;">Fecha: ${fecha}<br>Atendido: ${usuarioActivo.toUpperCase()}</p>
+        <div style="width: 180px; font-family: 'Courier New', monospace; font-size: 11px; line-height: 1.2; margin-bottom: 40px; color: #000;">
+            <center><strong style="font-size: 13px;">ASADERO LA ESMERALDA</strong><br><span>${titulo}</span><br>---</center>
+            <p style="font-size: 9px;">Fecha: ${fecha}<br>Atendido: ${usuarioActivo.toUpperCase()}</p>
             ${infoCliente}
             <span>---------------------------</span>
             <div>${detalleProductos}</div>
             ${esDomi ? `<div style="text-align:right;">Envío: $${configPrecioDomi.toLocaleString()}</div>` : ''}
             <div style="text-align:right; font-size: 13px; margin-top:5px;"><strong>TOTAL: $${totalVal.toLocaleString()}</strong></div>
-            <center><br><span>¡Gracias por su compra!</span><br><span>---------------------------</span></center>
+            <center><br>¡Gracias por su compra!<br>---</center>
         </div>`;
 
-    // LÓGICA DE COPIAS: Caja y Cocina siempre. Domicilio solo si aplica.
     let contenidoFinal = `<html><body style="margin:0; padding:0;">
         ${crearCuerpoTicket("*** COPIA CAJA ***")}
-        <div style="page-break-after: always; height:1px;"></div>
+        <div style="page-break-after: always;"></div>
         ${crearCuerpoTicket("*** COPIA COCINA ***")}
     `;
 
     if (esDomi) {
         contenidoFinal += `
-            <div style="page-break-after: always; height:1px;"></div>
-            ${crearCuerpoTicket("*** COPIA DOMICILIO ***")}
-        `;
-    }
-
-    contenidoFinal += `</body></html>`;
-
-    const f = document.getElementById('printFrame');
-    f.contentWindow.document.open();
-    f.contentWindow.document.write(contenidoFinal);
-    f.contentWindow.document.close();
-    setTimeout(() => { f.contentWindow.print(); }, 500);
-}
-</script>
-</body>
-</html>
+            <div style="page-break-after: always;"></div>
+            ${crear
