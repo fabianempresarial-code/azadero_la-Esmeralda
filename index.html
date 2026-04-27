@@ -35,7 +35,6 @@
         .card{background:var(--card);padding:20px;border-radius:24px;margin-bottom:15px;box-shadow:0 10px 25px rgba(0,0,0,0.4);border:1px solid rgba(255,255,255,0.05);}
         .grid{display:grid;grid-template-columns:repeat(auto-fill, minmax(60px, 1fr));gap:10px;}
         .btn{padding:14px;border:none;border-radius:14px;background:var(--soft);color:white;cursor:pointer;font-weight:bold;transition:0.2s;}
-        .btn:active{transform:scale(0.98);}
         .btn.active{background:var(--accent);color:#000;box-shadow:0 0 15px rgba(245,158,11,0.4);}
 
         .hidden { display: none !important; }
@@ -86,10 +85,10 @@
         <input type="text" id="user" class="input-field" placeholder="Usuario">
         <input type="password" id="pass" class="input-field" placeholder="Contraseña">
         <label style="display:flex; align-items:center; justify-content:center; gap:8px; color:white; text-transform: none;">
-            <input type="checkbox" id="remember"> Recordar mis datos
+            <input type="checkbox" id="remember"> Recordar datos
         </label>
-        <button id="btnEntrar" class="btn" style="width:100%; background:var(--accent); color:black; margin-top:15px;" onclick="validarAcceso()">ENTRAR</button>
-        <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Error de acceso o conexión.</p>
+        <button class="btn" style="width:100%; background:var(--accent); color:black; margin-top:15px;" onclick="validarAcceso()">ENTRAR</button>
+        <p id="login-error" style="color:var(--accent2); font-size:13px; margin-top:15px; display:none; font-weight:bold;">❌ Datos incorrectos</p>
     </div>
 </div>
 
@@ -102,8 +101,8 @@
 <div class="main-wrapper">
     <div class="sidebar">
         <div id="panelConfig" class="card hidden">
-            <label>⚙️ Control y Reportes</label>
-            <button class="btn" style="background:#22c55e; color:white; width:100%; margin-bottom:10px;" onclick="exportarVentasExcel()">📊 DESCARGAR EXCEL (OK)</button>
+            <label>⚙️ Control de Ventas</label>
+            <button class="btn" style="background:#22c55e; color:white; width:100%; margin-bottom:10px;" onclick="exportarVentasExcel()">📊 DESCARGAR REPORTE EXCEL</button>
             <button class="btn" style="background:var(--accent2); color:white; width:100%; margin-bottom:20px;" onclick="borrarBaseDatos()">🗑️ BORRAR HISTORIAL</button>
             
             <label>Configuración WhatsApp</label>
@@ -128,7 +127,7 @@
             <div id="formDomicilio" class="domi-form hidden" style="margin-top:15px;">
                 <input type="text" id="domiNombre" class="input-field" placeholder="Nombre Cliente">
                 <input type="tel" id="domiTel" class="input-field" placeholder="Teléfono">
-                <input type="text" id="domiDir" class="input-field" placeholder="Dirección Entrega">
+                <input type="text" id="domiDir" class="input-field" placeholder="Dirección">
             </div>
             <div id="sectionMesas" style="margin-top:15px;">
                 <label>📍 Seleccionar Mesa</label>
@@ -172,66 +171,53 @@
 const db = new Dexie("EsmeraldaDB");
 db.version(1).stores({ ventas: '++id, fecha, atendido, servicio, total, mesa, productos' });
 
-// --- CONFIGURACIÓN ---
 const URL_USUARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPjmET3KGocH1nu-BSY_rbDB5FTrIpRNL5h_jFaCQq5h3sOoQnkb3aixwq5WQL-fQ8FLe3tdtAiZN/pub?output=csv"; 
 const URL_MENU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU3FT66_0vVAygWPIDfjIAhGwnKGWeBhDB3cVrzkMZQRP6M0ONz2_xwy-u8Q7muAoP6oa4QFxXc7xb/pub?output=csv";
 
 let db_usuarios = [], menu = [], numComensales = 1, pedidosPorPersona = {}, tipoServicio = 'local', usuarioActivo = "";
 
-// --- CARGA INICIAL Y LOGIN ---
+// --- CARGA Y LOGIN ---
 async function cargarDatos() {
     try {
-        const resU = await fetch(URL_USUARIOS);
-        const txtU = await resU.text();
+        const [resU, resM] = await Promise.all([fetch(URL_USUARIOS), fetch(URL_MENU)]);
+        const [txtU, txtM] = await Promise.all([resU.text(), resM.text()]);
+        
         db_usuarios = parseCSV(txtU).slice(1).map(f => ({ 
             user: String(f[0] || "").trim().toLowerCase(), 
             pass: String(f[1] || "").trim() 
         }));
 
-        const resM = await fetch(URL_MENU);
-        const txtM = await resM.text();
         menu = parseCSV(txtM).slice(1).map(f => ({ 
             cat: f[0], nombre: f[1], precio: parseInt(f[3]?.replace(/[^0-9]/g, '')) || 0, img: f[4]?.trim() 
         })).filter(m => m.nombre);
 
-        // Recordar sesión
-        const sU = localStorage.getItem("tamarindo_user");
-        const sP = localStorage.getItem("tamarindo_pass");
-        if(sU && sP) {
-            document.getElementById("user").value = sU;
-            document.getElementById("pass").value = sP;
+        if(localStorage.getItem("tamarindo_user")){
+            document.getElementById("user").value = localStorage.getItem("tamarindo_user");
+            document.getElementById("pass").value = localStorage.getItem("tamarindo_pass");
             document.getElementById("remember").checked = true;
         }
-    } catch (e) { console.error("Error cargando Google Sheets:", e); }
+    } catch (e) { console.error(e); }
 }
 
 function validarAcceso() {
     const u = document.getElementById('user').value.trim().toLowerCase();
     const p = document.getElementById('pass').value.trim();
-    const encontrado = db_usuarios.find(acc => acc.user === u && acc.pass === p);
-    
-    if (encontrado) {
+    if (db_usuarios.find(acc => acc.user === u && acc.pass === p)) {
         if(document.getElementById("remember").checked){
             localStorage.setItem("tamarindo_user", u); localStorage.setItem("tamarindo_pass", p);
-        } else {
-            localStorage.removeItem("tamarindo_user"); localStorage.removeItem("tamarindo_pass");
         }
-        usuarioActivo = u;
-        document.getElementById('login-overlay').style.display = 'none';
-        iniciarUI();
-    } else {
-        document.getElementById('login-error').style.display = 'block';
-    }
+        usuarioActivo = u; document.getElementById('login-overlay').style.display = 'none';
+        iniciarApp();
+    } else { document.getElementById('login-error').style.display = 'block'; }
 }
 
-function iniciarUI(){
+function iniciarApp(){
     document.getElementById("displayNumMesas").textContent = localStorage.getItem("tamarindo_mesas") || 8;
     document.getElementById("configWa").value = localStorage.getItem("tamarindo_wa") || "";
     document.getElementById("configPrecioDomi").value = localStorage.getItem("tamarindo_precio_domi") || 0;
     crearMesas(); renderComensales();
 }
 
-// --- UTILIDADES CSV ---
 function parseCSV(t) {
     const r=[], row=[]; let c='', q=false;
     for(let ch of t){
@@ -243,12 +229,11 @@ function parseCSV(t) {
     row.push(c); r.push(row); return r;
 }
 
-// --- CONTROL DE VENTAS (EXCEL COMPATIBLE) ---
+// --- BASE DE DATOS Y EXCEL (CORREGIDO) ---
 async function registrarVentaDB(total) {
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A";
     const lista = [];
     Object.values(pedidosPorPersona).forEach(arr => arr.forEach(p => lista.push(p.nombre)));
-    
     await db.ventas.add({
         fecha: new Date().toLocaleString(),
         atendido: usuarioActivo.toUpperCase(),
@@ -261,27 +246,26 @@ async function registrarVentaDB(total) {
 
 async function exportarVentasExcel() {
     const ventas = await db.ventas.toArray();
-    if(!ventas.length) return alert("No hay ventas para exportar.");
+    if(!ventas.length) return alert("No hay ventas.");
 
-    let csv = "sep=,\n"; // Indica a Excel que el separador es la coma
-    csv += "ID,FECHA,ATENDIDO,SERVICIO,MESA,PRODUCTOS,TOTAL\n";
+    let csv = "sep=;\n"; // Separador punto y coma para Excel español
+    csv += "ID;FECHA;ATENDIDO;SERVICIO;MESA;PRODUCTOS;TOTAL\n";
     
     ventas.forEach(v => {
-        const prodLimpios = v.productos.replace(/"/g, '""');
-        csv += `${v.id},${v.fecha},${v.atendido},${v.servicio},${v.mesa},"${prodLimpios}",${v.total}\n`;
+        const pLimpios = v.productos.replace(/;/g, ",").replace(/\n/g, " ");
+        csv += `${v.id};${v.fecha};${v.atendido};${v.servicio};${v.mesa};"${pLimpios}";${v.total}\n`;
     });
 
     const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-    link.href = url;
-    link.download = `Ventas_Esmeralda_${new Date().toISOString().slice(0,10)}.csv`;
+    link.href = URL.createObjectURL(blob);
+    link.download = `Reporte_Esmeralda_${new Date().toISOString().slice(0,10)}.csv`;
     link.click();
 }
 
-function borrarBaseDatos() { if(confirm("¿Seguro que desea borrar todo el historial?")) db.ventas.clear(); }
+function borrarBaseDatos() { if(confirm("¿Borrar historial?")) db.ventas.clear(); }
 
-// --- LÓGICA DE INTERFAZ ---
+// --- LOGICA DE PEDIDOS ---
 function setServicio(t) {
     tipoServicio = t;
     document.getElementById('btnLocal').classList.toggle('active', t === 'local');
@@ -373,7 +357,7 @@ function calcularTotal(){
 }
 
 function nuevoPedido(){
-    if(!confirm("¿Limpiar pedido actual?")) return;
+    if(!confirm("¿Limpiar pedido?")) return;
     numComensales = 1; pedidosPorPersona = {};
     document.getElementById("cantComensales").textContent = 1;
     document.querySelectorAll("input:not([id^='config']), textarea").forEach(i => i.value = "");
@@ -401,7 +385,7 @@ function wa(){
 }
 
 function imprimir() {
-    const total = calcularTotal(); if(!total) return alert("Pedido vacío");
+    const total = calcularTotal(); if(!total) return alert("Vacío");
     registrarVentaDB(total);
     const fecha = new Date().toLocaleString();
     const esDomi = tipoServicio === 'domicilio';
@@ -417,7 +401,7 @@ function imprimir() {
 
     const info = esDomi ? `<b>DOMICILIO</b><br>Cli: ${document.getElementById('domiNombre').value}<br>Dir: ${document.getElementById('domiDir').value}` : `<b>MESA: ${document.querySelector("#mesas .active")?.textContent}</b>`;
 
-    const ticket = (t) => `<div style="width:180px; font-family:monospace; font-size:10px; margin-bottom:50px;">
+    const ticket = (t) => `<div style="width:180px; font-family:monospace; font-size:10px; margin-bottom:50px; color:#000;">
         <center><b>ASADERO LA ESMERALDA</b><br>${t}<br>---</center>
         ${info}<br>Atendido: ${usuarioActivo.toUpperCase()}<br>---<br>${det}
         ${esDomi?`<div style="text-align:right;">Envío: $${document.getElementById('configPrecioDomi').value}</div>`:''}
@@ -437,7 +421,6 @@ function toggleConfig() { document.getElementById('panelConfig').classList.toggl
 function saveConfig() { localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); localStorage.setItem("tamarindo_precio_domi", document.getElementById("configPrecioDomi").value); }
 function toggleFullScreen() { if (!document.fullscreenElement) document.documentElement.requestFullscreen(); else document.exitFullscreen(); }
 
-// --- CARGA ---
 cargarDatos();
 </script>
 </body>
