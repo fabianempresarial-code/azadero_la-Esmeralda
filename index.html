@@ -89,7 +89,7 @@
         }
 
         label{display:block; margin-bottom:8px; font-size:13px; color:var(--accent); text-transform:uppercase; font-weight:800; letter-spacing:1px;}
-    
+        
         .remember-me {
             display: flex; align-items: center; justify-content: center; gap: 10px;
             margin-bottom: 15px; font-size: 14px; color: white; cursor: pointer;
@@ -184,43 +184,14 @@
 <iframe id="printFrame" style="display:none;"></iframe>
 
 <script>
-// --- NUEVA LÓGICA DE DIRECCIÓN POR MESA (QR) ---
-function detectarMesaPorURL() {
-    const params = new URLSearchParams(window.location.search);
-    const mesaURL = params.get('mesa');
-    if (mesaURL) {
-        // Esperamos un segundo a que las mesas se rendericen para activarla
-        setTimeout(() => {
-            seleccionarMesa(mesaURL);
-        }, 500);
-    }
-}
-
-function seleccionarMesa(numero) {
-    const botones = document.querySelectorAll("#mesas .btn");
-    botones.forEach(b => {
-        if (b.textContent == numero) {
-            b.click(); // Simula el click en la mesa correspondiente
-            b.scrollIntoView({ behavior: 'smooth', block: 'center' });
-        }
-    });
-}
-// ----------------------------------------------
-
-function toggleFullScreen() {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(err => console.log(err));
-    } else {
-        if (document.exitFullscreen) document.exitFullscreen();
-    }
-}
-
+// --- CONFIGURACIÓN Y VARIABLES ---
 const URL_USUARIOS = "https://docs.google.com/spreadsheets/d/e/2PACX-1vQcPjmET3KGocH1nu-BSY_rbDB5FTrIpRNL5h_jFaCQq5h3sOoQnkb3aixwq5WQL-fQ8FLe3tdtAiZN/pub?output=csv"; 
 const URL_MENU = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTU3FT66_0vVAygWPIDfjIAhGwnKGWeBhDB3cVrzkMZQRP6M0ONz2_xwy-u8Q7muAoP6oa4QFxXc7xb/pub?output=csv";
 const IMG_DEFAULT = "https://via.placeholder.com/150?text=COMIDA";
 
 let db_usuarios = [], menu = [], numComensales = 1, pedidosPorPersona = {}, tipoServicio = 'local', usuarioActivo = "";
 
+// --- UTILIDADES ---
 function parseCSV(t) {
     const r=[], row=[]; let c='', q=false;
     if(!t) return r;
@@ -234,6 +205,15 @@ function parseCSV(t) {
     return r;
 }
 
+function toggleFullScreen() {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(err => console.log(err));
+    } else {
+        if (document.exitFullscreen) document.exitFullscreen();
+    }
+}
+
+// --- LOGICA DE ACCESO ---
 window.onload = () => {
     const savedUser = localStorage.getItem("tamarindo_user");
     const savedPass = localStorage.getItem("tamarindo_pass");
@@ -269,7 +249,7 @@ function iniciarApp() {
     fetch(URL_MENU).then(r=>r.text()).then(t=>{
         menu = parseCSV(t).slice(1).map(f=>({ cat: f[0], nombre: f[1], precio: parseInt(f[3]?.replace(/[^0-9]/g, '')) || 0, img: f[4]?.trim() || "" })).filter(m => m.nombre);
         init();
-        detectarMesaPorURL(); // EJECUTAR DETECCIÓN DE QR
+        detectarMesaPorURL();
     });
 }
 
@@ -280,11 +260,31 @@ function init(){
     crearMesas(); renderComensales();
 }
 
+// --- GESTIÓN DE INTERFAZ ---
 function toggleConfig() { document.getElementById('panelConfig').classList.toggle('hidden'); }
 function saveConfig() { 
     localStorage.setItem("tamarindo_wa", document.getElementById("configWa").value); 
     localStorage.setItem("tamarindo_precio_domi", document.getElementById("configPrecioDomi").value);
 }
+
+function detectarMesaPorURL() {
+    const params = new URLSearchParams(window.location.search);
+    const mesaURL = params.get('mesa');
+    if (mesaURL) {
+        setTimeout(() => { seleccionarMesa(mesaURL); }, 500);
+    }
+}
+
+function seleccionarMesa(numero) {
+    const botones = document.querySelectorAll("#mesas .btn");
+    botones.forEach(b => {
+        if (b.textContent == numero) {
+            b.click();
+            b.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    });
+}
+
 function setServicio(tipo) {
     tipoServicio = tipo;
     document.getElementById('btnLocal').classList.toggle('active', tipo === 'local');
@@ -293,11 +293,13 @@ function setServicio(tipo) {
     document.getElementById('sectionMesas').classList.toggle('hidden', tipo === 'domicilio');
     calcularTotal();
 }
+
 function ajustarMesas(cambio) {
     let nuevo = Math.max(1, parseInt(document.getElementById("displayNumMesas").textContent) + cambio);
     document.getElementById("displayNumMesas").textContent = nuevo;
     localStorage.setItem("tamarindo_mesas", nuevo); crearMesas();
 }
+
 function crearMesas(){
     const cont = document.getElementById("mesas"), n = parseInt(document.getElementById("displayNumMesas").textContent);
     cont.innerHTML = "";
@@ -311,11 +313,14 @@ function crearMesas(){
         cont.appendChild(b);
     }
 }
+
+// --- GESTIÓN DE PEDIDOS ---
 function cambiarComensales(n){
     numComensales = Math.max(1, numComensales + n);
     document.getElementById("cantComensales").textContent = numComensales;
     renderComensales();
 }
+
 function renderComensales(){
     const cont = document.getElementById("contenedor-pedidos"), cats = [...new Set(menu.map(m=>m.cat))].filter(Boolean);
     cont.innerHTML = "";
@@ -327,11 +332,13 @@ function renderComensales(){
     }
     calcularTotal();
 }
+
 function setCat(idx, cat, btn) {
     const parent = document.getElementById(`cats-${idx}`);
     parent.querySelectorAll('.btn-cat').forEach(b => b.classList.remove('active'));
     btn.classList.add('active'); renderChips(idx, cat);
 }
+
 function renderChips(idx, cat){
     document.getElementById(`chips-${idx}`).innerHTML = menu.filter(m => m.cat === cat).map(p => {
         const foto = (p.img && p.img.length > 5) ? p.img : IMG_DEFAULT;
@@ -393,6 +400,7 @@ function nuevoPedido(){
     setServicio('local'); renderComensales();
 }
 
+// --- SALIDA: WHATSAPP Y TICKET ---
 function wa(){
     const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", total = calcularTotal(), targetNum = document.getElementById("configWa").value;
     if(total === 0) return alert("Pedido vacío");
@@ -414,16 +422,73 @@ function wa(){
     window.open(`https://wa.me/${targetNum}?text=${encodeURIComponent(msg)}`);
 }
 
-function imprimir(){
-    const mesa = document.querySelector("#mesas .active")?.textContent || "N/A", totalVal = calcularTotal();
-    if(totalVal === 0) return alert("No hay productos");
-    const fecha = new Date().toLocaleString();
-    let ticketsHtml = `<div style="width:280px; padding:10px; font-family:monospace;"><h3>ASADERO TAMARINDO</h3><p>${fecha}</p><p>Mesa: ${mesa}</p><hr><p>TOTAL: $${totalVal.toLocaleString()}</p></div>`;
+function imprimir() {
+    const mesa = document.querySelector("#mesas .active")?.textContent || "N/A";
+    const totalVal = calcularTotal();
+    const configPrecioDomi = parseInt(document.getElementById("configPrecioDomi").value) || 0;
+    if (totalVal === 0) return alert("No hay productos");
+
+    const fecha = new Date().toLocaleString('es-CO', { hour12: true });
+    const esDomi = tipoServicio === 'domicilio';
+    
+    let detalleProductos = "";
+    Object.keys(pedidosPorPersona).forEach(idx => {
+        if (pedidosPorPersona[idx].length > 0) {
+            const agrupado = pedidosPorPersona[idx].reduce((acc, curr) => { 
+                acc[curr.nombre] = (acc[curr.nombre] || 0) + 1; 
+                acc[curr.nombre + "_precio"] = curr.precio;
+                return acc; 
+            }, {});
+            
+            detalleProductos += `<div style="border-bottom:1px dashed #ccc; padding: 5px 0;">`;
+            detalleProductos += `<strong>PEDIDO ${idx}</strong><br>`;
+            for (const [nombre, cant] of Object.entries(agrupado)) {
+                if (!nombre.endsWith("_precio")) {
+                    const subtotal = cant * agrupado[nombre + "_precio"];
+                    detalleProductos += `${cant}x ${nombre.substring(0,18)} <span style="float:right">$${subtotal.toLocaleString()}</span><br>`;
+                }
+            }
+            detalleProductos += `</div>`;
+        }
+    });
+
+    const infoCliente = esDomi ? `
+        <div style="border:1px solid #000; padding:5px; margin:5px 0;">
+            <b>DOMICILIO</b><br>
+            Cli: ${document.getElementById('domiNombre').value || 'N/A'}<br>
+            Tel: ${document.getElementById('domiTel').value || 'N/A'}<br>
+            Dir: ${document.getElementById('domiDir').value || 'N/A'}
+        </div>` : `<p><b>UBICACIÓN: MESA ${mesa}</b></p>`;
+
+    const crearCuerpoTicket = (titulo) => `
+        <div style="width: 180px; font-family: 'Courier New', Courier, monospace; font-size: 11px; line-height: 1.2; margin-bottom: 40px; color: #000;">
+            <center>
+                <strong style="font-size: 13px;">ASADERO LA ESMERALDA</strong><br>
+                <span>${titulo}</span><br>
+                <span>---------------------------</span>
+            </center>
+            <p style="font-size: 9px; margin: 5px 0;">Fecha: ${fecha}<br>Atendido: ${usuarioActivo.toUpperCase()}</p>
+            ${infoCliente}
+            <span>---------------------------</span>
+            <div>${detalleProductos}</div>
+            ${esDomi ? `<div style="text-align:right;">Envío: $${configPrecioDomi.toLocaleString()}</div>` : ''}
+            <div style="text-align:right; font-size: 13px; margin-top:5px;"><strong>TOTAL: $${totalVal.toLocaleString()}</strong></div>
+            <center><br><span>¡Gracias por su compra!</span><br><span>---------------------------</span></center>
+        </div>`;
+
+    let contenidoFinal = `<html><body style="margin:0; padding:0;">
+        ${crearCuerpoTicket("*** COPIA CAJA ***")}
+        <div style="page-break-after: always; height:1px;"></div>
+        ${crearCuerpoTicket("*** COPIA COCINA ***")}
+        <div style="page-break-after: always; height:1px;"></div>
+        ${crearCuerpoTicket("*** COPIA DOMICILIO ***")}
+    </body></html>`;
+
     const f = document.getElementById('printFrame');
     f.contentWindow.document.open();
-    f.contentWindow.document.write(ticketsHtml);
+    f.contentWindow.document.write(contenidoFinal);
     f.contentWindow.document.close();
-    f.contentWindow.print();
+    setTimeout(() => { f.contentWindow.print(); }, 500);
 }
 </script>
 </body>
